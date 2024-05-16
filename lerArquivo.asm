@@ -32,7 +32,9 @@ la $a0, entrada
 la $a1, linha
 jal proximaLinha
 
-
+la $a0, linha
+la $a1, palavraList
+jal separarPalavras
 
 
 
@@ -154,26 +156,59 @@ jr $ra
 
 separarPalavras:
 add $sp, $sp, -16
-sw $a0, 12($sp)
-sw $a1, 8($sp)
-sw $ra, 4($sp)
-sw $fp, ($sp)
+sw $a0, 12($sp) #($fp) arg0 - linha
+sw $a1, 8($sp) #-4($fp) arg1 - palavraList
+sw $ra, 4($sp) #-8($fp) ra
+sw $fp, ($sp) #-12($fp) antigo $fp
 
 add $fp, $sp, 12
 	
-move $t7, $a0
-move $t6, $a1
+#$a0 #linha
+#$a1 #palavraList
 
-move $t5, $zero #indice da caractere na linha
-move $t4, $zero #indice da palavra na lista de palavras
+move $t4, $zero #indice da caractere na linha
+move $t5, $zero #indice da caractere na palavra 
 
-separarPalavraLoop1:
-add $t1, $t7, $t5
-lw $t0, ($t1)
-separarPalavraLoop2:
-and $t0, 0x00ff
-beq $t0, 
+add $sp, $sp, -4
+sw $zero, ($sp) #-16($fp) indice da palavra na lista de palavras * 4
 
+separarPalvrasLoop1:
+lw $t6, -4($fp) #palavraList**
+lw $t5, -16($fp)
+add $t6, $t6, $t5
+lw $t6, ($t6) #palavra*
+
+
+lw $t7, ($fp) #linha
+separarPalavrasLoop2:
+add $t1, $t7, $t4 
+lw $t0, ($t1) #obtem as proxima 4 caracteres
+separarPalavrasLoop3:
+and $t3, $t4, 0x0003 #obtem os primeiros 3 bits
+sll $t3, $t3, 3 #multiplica por 8
+srlv $t0, $t0, $t4
+and $t1, $t0, 0x00ff
+bne $t1, 0x0020, separarPalavrasIf1
+lw $t2, -16($fp)
+add $t2, $t2, 4
+sw $t2, -16($fp)
+j separarPalavrasLoop1
+
+separarPalavrasIf1:
+#salvar caractere
+and $t3, $t5, 0xfffc
+add $t7, $t6, $t3
+lw $t3, ($t7)
+and $t2, $t5, 0x0003
+sll $t2, $t2, 3 # multiplica por 8
+srlv $t1, $t1, $t2
+xor $t1, $t1, $t3
+sw $t1, ($t7)
+
+add $t4, $t4, 1
+add $t5, $t5, 1
+bne $t2, 24, separarPalavrasLoop3
+j separarPalavrasLoop2
 
 
 lw $ra, -8($fp)
