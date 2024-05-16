@@ -150,10 +150,38 @@ add $sp, $sp, 12
 jr $ra
 
 
-
-
 # ------------------------------------------------------- #
 
+separarPalavras:
+add $sp, $sp, -16
+sw $a0, 12($sp)
+sw $a1, 8($sp)
+sw $ra, 4($sp)
+sw $fp, ($sp)
+
+add $fp, $sp, 12
+	
+move $t7, $a0
+move $t6, $a1
+
+move $t5, $zero #indice da caractere na linha
+move $t4, $zero #indice da palavra na lista de palavras
+
+separarPalavraLoop1:
+add $t1, $t7, $t5
+lw $t0, ($t1)
+separarPalavraLoop2:
+and $t0, 0x00ff
+beq $t0, 
+
+
+
+lw $ra, -8($fp)
+lw $fp, -12($fp)
+
+jr $ra
+
+# ----------------------------------------------------- #
 
 
 
