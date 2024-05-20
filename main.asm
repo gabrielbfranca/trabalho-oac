@@ -14,9 +14,11 @@ data_header: .asciiz "DEPTH = 16384;\nWIDTH = 32;\nADDRESS_RADIX = HEX;\nDATA_RA
 text_header: .asciiz "DEPTH = 4096;\nWIDTH = 32;\nADDRESS_RADIX = HEX;\nDATA_RADIX = HEX;\nCONTENT\nBEGIN\n\n"
 separador:  .asciiz " : "
 quebralinha:  .asciiz "\n"
-error:    .asciiz "valor não reconhecido"
+error:    .asciiz "valor nao reconhecido"
+data_word: .asciiz ".data"
 
 buffer:   .space  4
+everything: .space 100
 .text
 # reads_file saved file descriptor: $s0
   li    $v0, 13       
@@ -43,16 +45,13 @@ buffer:   .space  4
   move $s2, $v0
  #end      
 
-start:
+parse_words:
   jal readc      #le primeiro caracter
-  bne $v0, 46, error # checa se existe ponto
-	findWord:
-	beq 
+  #bne $v0, 46, catch # checa se existe ponto
+  j parse_words
+	
 
 readc: # usa arquivo : $s0, retorna caracter em: $v0 
- 	addi $sp, $sp, -12
-	sw $ra, 8($sp) 
-	sw $a0, 4($sp)
 	li $v0,14
 	move $a0,$s0  # aponta pro ponteiro no arquivo
   	la $a1,buffer 
@@ -85,7 +84,7 @@ end: # ends program
     li    $v0, 10
     syscall
 
-error: # catch errors
+catch: # catch errors
   li    $v0, 4      
   la    $a0, error  
   syscall
