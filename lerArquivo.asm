@@ -3,8 +3,8 @@ fileDescriptor: .word 0x00000000
 entrada: .space 4096
 nomeDaEntrada: .asciiz "example_saida.asm"
 
-gambiarra: .space 2 #o nomeDaEntrada termina numa word de 2 bytes, por isso é preciso 
-#adicionar esse espaçamento de 2 bytes para que as proximas entradas estejam alinhadas na memória
+gambiarra: .space 2 #o nomeDaEntrada termina numa word de 2 bytes, por isso ï¿½ preciso 
+#adicionar esse espaï¿½amento de 2 bytes para que as proximas entradas estejam alinhadas na memï¿½ria
 
 linha: .space 256
 
@@ -75,7 +75,7 @@ la $t0, entrada
 li $v0, 14
 move $a1, $t0
 li $a2, 4096
-syscall #v0 recebe o número de caracteres lidas
+syscall #v0 recebe o nï¿½mero de caracteres lidas
 #bgt $v0, 4096, lerTextoErro1 # TODO: precisamos criar logica para caso o arquivo ultrapasse o limite de caracteres
 blt $v0, 0, lerTextoErro2
 jr $ra
@@ -172,7 +172,7 @@ move $t5, $zero #indice da caractere na palavra
 add $sp, $sp, -4
 sw $zero, ($sp) #-16($fp) indice da palavra na lista de palavras * 4
 
-separarPalvrasLoop1:
+separarPalavrasLoop1:
 lw $t6, -4($fp) #palavraList**
 lw $t5, -16($fp)
 add $t6, $t6, $t5
