@@ -81,7 +81,7 @@ add $sp $sp 12
 
 add $sp $sp -32
 # aqui o scopo já é iniciado parcilmente por newArgsStack
-sw $s7 28($sp) #52($fp) - $s7
+sw $s7 28($sp) #52($fp) - $s7 antigo
 sw $s6 24($sp) #48($fp) - $s6
 sw $s5 20($sp) #44($fp) - $s5
 sw $s4 16($sp) #40($fp) - $s4

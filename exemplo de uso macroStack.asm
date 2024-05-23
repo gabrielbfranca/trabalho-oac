@@ -32,7 +32,7 @@ clearSimpleStack
 jr $ra
 fibonacciIf1:
 add $sp $sp -8 # cria espaço para duas variáveis
-add $a0 $a0 -1 # prepara a primeira chamda
+add $a0 $a0 -1 # prepara a primeira chamada
 jal fibonacci
 sw $v0 -4($fp)
 
