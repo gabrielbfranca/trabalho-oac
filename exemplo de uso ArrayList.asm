@@ -35,3 +35,16 @@ lb $a0 ($t3)
 syscall
 add $t1 $t1 1
 blt $t1 11 loop2
+
+# uma outra forma de imprimir, mais simples, é usando o print stirng
+#
+# lembrando $t0 é um ponteiro para ArrayList, que em sua posição ($t0)
+# contem o array em si, que será carregado para $a0 para poder ser impresso
+
+li $v0 4
+lw $a0 ($t0)
+syscall
+
+fim:
+li $v0 10
+syscall
