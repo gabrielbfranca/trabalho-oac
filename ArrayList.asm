@@ -42,8 +42,9 @@ sw $a0 0($sp)
 li $v0 9 #alocar bytes
 li $a0 12 #alocar 3 words
 syscall
-add $a0 $zero %capacidade
-move $t0 $v0
+move $t0 $v0 # ponteiro para ArrayList
+add $a0 $zero %capacidade #aloca 1 byte a mais para garantir que o array termine em um
+add $a0 $a0 1             #caracter nulo
 li $v0 9
 syscall
 sw $v0   0($t0)   # 0(%regRetorno) endereço do array em si
@@ -91,6 +92,7 @@ j fim
 ExpandArray:
 sll $t2 $t2 1 # duplicar o tamanho
 move $a0 $t2
+add $a0 $a0 1 # 1 a mais do que a capacidade para que o array termine em caracter nulo
 li $v0 9
 syscall
 move $t4 $v0
