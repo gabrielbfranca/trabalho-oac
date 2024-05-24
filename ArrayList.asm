@@ -40,11 +40,11 @@ sw $v0 4($sp)  # das funções que chamarem essa
 sw $a0 0($sp)
 
 li $v0 9 #alocar bytes
-li $a0 12
+li $a0 12 #alocar 3 words
 syscall
+add $a0 $zero %capacidade
 move $t0 $v0
 li $v0 9
-add $a0 $zero %capacidade
 syscall
 sw $v0   0($t0)   # 0(%regRetorno) endereço do array em si
 sw $a0   4($t0)   # 4(%regRetorno) capacidade do array
@@ -57,7 +57,7 @@ lw $t0 8($sp) # restaura o valor antigo dos registradores
 lw $v0 4($sp)
 lw $a0 0($sp)
 lw %regRetorno 12($sp)
-add $sp $sp 12
+add $sp $sp 16
 .end_macro
 
 ##################################################
