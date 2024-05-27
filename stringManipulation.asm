@@ -168,6 +168,58 @@ finish:
  	addi $sp, $sp, 12
 .end_macro
 
+.macro write_to_file(%string, %file_descriptor)
+.data
+  error_message: .asciiz "Error writing to file."
+.text
+  # Get string length (excluding null terminator)
+  addi $sp, $sp, -20
+  sw $ra, 20($sp)
+  sw $a2, 16($sp)
+  sw $a1, 12($sp)
+  sw $t2, 8($sp)
+  sw $t1, 4($sp)
+  sw $t0, 0($sp)
+  
+  move $a1, %string
+  li $t0, 0  # counter for string length
+  la $t2, %string
+loop:
+    lb $t1, 0($t2)  # load byte from string address
+    beqz $t1, done_strlen  # branch if null terminator found
+    addi $t2, $t2, 1  # move to next character
+    addi $t0, $t0, 1  # increment counter
+    j loop
+  done_strlen:
+
+  # Write the string to the file
+  li $v0, 15    # syscall code for write
+  move $a0, %file_descriptor  # use provided file descriptor
+  move $a2, $t0  # string length (excluding null terminator)
+  syscall
+
+  # Check if write was successful
+  
+  bne $v0, -1, finish
+write_error:
+  # Handle error (e.g., print message)
+  li $v0, 4    # syscall code for print string
+  la $a0, error_message  # load error message address
+  syscall
+  li $v0, 10
+  syscall
+
+finish:
+  	lw $ra, 20($sp)
+  	lw $a2, 16($sp)
+  	lw $a1, 12($sp)
+  	sw $t2, 8($sp)
+  	lw $t1, 4($sp)
+  	lw $t0, 0($sp)
+  	addi $sp, $sp, 20
+.end_macro
+
+
 concatenateString(str1, str2, result)
 print_str (result)
 cleanSpace(result)
