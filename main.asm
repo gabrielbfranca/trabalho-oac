@@ -1,3 +1,9 @@
+######################################################
+# registradores reservados: 			     #	
+#    file descriptor para arquivo de entrada: $s0    #
+#    file descriptor para arquivo texto : $s1	     #
+#    file descriptor para arquivo data : $s2	     #
+######################################################
 .data
 filepath:    .asciiz "example_saida.asm"
 text:   .asciiz "data.mif"     
