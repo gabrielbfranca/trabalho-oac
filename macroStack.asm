@@ -121,3 +121,64 @@ add $sp $sp 32
 
 
 #######################################################################
+
+# macro newBiggerStack
+# salva automaticamente todas as informções de estado de uma função,
+# até os registradores temporários
+# incluindo os registradores $t0-$t9, permitindo que eles sejam
+# utilizados pela função que pede essa Stack
+.macro newBiggerStack
+add $sp $sp -40
+# aqui o scopo já é iniciado parcilmente por newArgsStack
+sw $t9 36($sp)   #92($fp) - $t9 antigo
+sw $t8 32($sp)   #88($fp) - $t8
+sw $t7 28($sp)   #84($fp) - $t7
+sw $t6 24($sp)   #80($fp) - $t6
+sw $t5 20($sp)   #76($fp) - $t5
+sw $t4 16($sp)   #72($fp) - $t4
+sw $t3 12($sp)   #68($fp) - $t3
+sw $t2 8($sp)    #64($fp) - $t2
+sw $t1 4($sp)    #60($fp) - $t1
+sw $t0 0($sp)    #56($fp) - $t0 ####
+newCompleteStack #52($fp) - $s7 
+                 #48($fp) - $s6
+                 #44($fp) - $s5
+                 #40($fp) - $s4
+                 #36($fp) - $s3
+                 #32($fp) - $s2
+                 #28($fp) - $s1
+                 #24($fp) - $s0 ####
+                 #20($fp) - $a3 
+                 #16($fp) - $a2
+                 #12($fp) - $a1
+                 #8($fp)  - $a0
+                 #4($fp)  - antigo $ra
+                 #0($fp)  - antigo $fp
+             
+                 #-4($fp)
+                 #-8($fp)
+                 #etc     - variáveis locais
+.end_macro
+
+# macro clearBiggerStack
+# reatribui os valores antigos de $ra, $fp, $a, $s e $t
+# limpa o espaço no Stack criado por newBiggerStack 
+# os espaços criados depois são limpados automaticamente
+# usado no fim de funções que chamaram newBiggerStack
+.macro clearBiggerStack
+clearArgsStack
+lw $t9 36($sp) # recupera os valores antigos dos registradores $t
+lw $t8 32($sp)
+lw $t7 28($sp) 
+lw $t6 24($sp)
+lw $t5 20($sp)
+lw $t4 16($sp)
+lw $t3 12($sp)
+lw $t2 8($sp)
+lw $t1 4($sp)
+lw $t0 0($sp)
+add $sp $sp 32
+.end_macro
+
+
+#######################################################################
