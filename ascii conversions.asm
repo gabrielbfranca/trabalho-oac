@@ -30,6 +30,18 @@ blt %registrador 0x30 %label
 bgt %registrador 0x39 %label
 .end_macro
 
+.macro bih %registrador %label #branch if ASCII hexa
+blt %registrador 0x30 naoEh
+bgt %registrador 0x39 talvez1
+j %label
+talvez1: blt %registrador 0x41 naoEh #A
+bgt %registrador 0x46 talvez2 #F
+j %label
+talvez2: blt %registrador 0x61 naoEh #a
+bgt %registrador 0x66 naoEh #f
+j %label
+naoEh:
+.end_macro
 
 .macro binh %registrador %label #branch if not ASCII hexa
 blt %registrador 0x30 %label
@@ -39,7 +51,7 @@ talvez1: blt %registrador 0x41 %label #A
 bgt %registrador 0x46 talvez2 #F
 j Eh
 talvez2: blt %registrador 0x61 %label #a
-bgt %registrador 0x46 %label #f
+bgt %registrador 0x66 %label #f
 # j Eh
 Eh:
 .end_macro
