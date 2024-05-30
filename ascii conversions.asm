@@ -1,10 +1,22 @@
 .data
 teste1: .asciiz "16"
 teste2: .asciiz "0x10"
-teste3: .asciiz "123456789" 
-teste4: .asciiz "0x" # vai retornar 0
-teste5: .asciiz "0f" # não é numero
-teste6: .asciiz "0xfffffffff" # muito grande
+teste3: .asciiz "123456789"
+teste4: .asciiz "4294967295" #unsigned
+teste5: .asciiz "0xffffffff" #unsigned
+teste6: .asciiz "0x" # vai retornar 0
+teste7: .asciiz "0"
+teste8: .asciiz "-1"
+teste9: .asciiz "-0x1"
+teste10: .asciiz "-0"
+teste11: .asciiz "-2147483648"
+teste12: .asciiz "-0x80000000"
+teste13: .asciiz "-2147483649"
+teste14: .asciiz "-0x80000001"
+teste15: .asciiz "4294967296" # muito grande
+teste16: .asciiz "0x100000000" # muito grande
+teste17: .asciiz "0f" # não é numero
+
 mensagem: .asciiz "oi"
 
 mensagemDeErro1: "Erro número inválido: "
@@ -18,30 +30,33 @@ mensagemDeErro1: "Erro número inválido: "
 
 
 # Funções para checar o tipo de caractere
-.macro bid %registrador %label #branch if ASCII decimal
-blt %registrador 0x30 naoEh
-bgt %registrador 0x39 naoEh
-j %label
-naoEh:
-.end_macro
+
+# não está em uso
+# .macro bid %registrador %label #branch if ASCII decimal
+# blt %registrador 0x30 naoEh
+# bgt %registrador 0x39 naoEh
+# j %label
+# naoEh:
+# end_macro
 
 .macro bind %registrador %label #branch if not ASCII decimal
 blt %registrador 0x30 %label
 bgt %registrador 0x39 %label
 .end_macro
 
-.macro bih %registrador %label #branch if ASCII hexa
-blt %registrador 0x30 naoEh
-bgt %registrador 0x39 talvez1
-j %label
-talvez1: blt %registrador 0x41 naoEh #A
-bgt %registrador 0x46 talvez2 #F
-j %label
-talvez2: blt %registrador 0x61 naoEh #a
-bgt %registrador 0x66 naoEh #f
-j %label
-naoEh:
-.end_macro
+# não está em uso
+# .macro bih %registrador %label #branch if ASCII hexa
+# blt %registrador 0x30 naoEh
+# bgt %registrador 0x39 talvez1
+# j %label
+# talvez1: blt %registrador 0x41 naoEh #A
+# bgt %registrador 0x46 talvez2 #F
+# j %label
+# talvez2: blt %registrador 0x61 naoEh #a
+# bgt %registrador 0x66 naoEh #f
+# j %label
+# naoEh:
+# .end_macro
 
 .macro binh %registrador %label #branch if not ASCII hexa
 blt %registrador 0x30 %label
@@ -79,19 +94,32 @@ end:
 .macro asciiToNumber %string
 newCompleteStack
 
-add $s0 $zero %string # endereço da string
+la $s0 (%string) # endereço da string
 li $s1 0 # indice da caractere na string
 li $v0 0 # retorno
+li $s4 0 # positivo
 
-lb $s2 0($t0)
+comecar:
+add $s7 $s0 $s1
+lb $s2 ($s7)
 beq $s2 0x00 fim
-bne $s2 0x30 decimal
 
-lb $s2 1($t0)
+bne $s2 0x2d positivo # -
+beq $s4 0x8000 erro
+lui $s4 0x8000
+add $s1 $s1 1
+j comecar
+
+positivo:
+bne $s2 0x30 decimal
+# 0
+add $s1 $s1 1
+add $s7 $s0 $s1
+lb $s2 ($s7)
 beq $s2 0x00 fim
 bne $s2 0x78 decimal # se formos colocar suporte para octal, seria aqui
 
-add $s1 $s1 2
+add $s1 $s1 1
 hexa:
 add $s7 $s0 $s1
 lb $s2 ($s7)
@@ -102,7 +130,9 @@ mul $v0 $v0 16 # poderia ter usado sll, mas não seria tão trivial detectar overf
 mfhi $s3 # detectar se o numero seja muito grande
 bgtz $s3, erro
 hton $s2
-add $v0 $v0 $s2
+addu $s5 $v0 $s2
+bgtu $v0 $s5 erro
+move $v0 $s5
 add $s1 $s1 1
 j hexa
 
@@ -116,9 +146,12 @@ mul $v0 $v0 10
 mfhi $s3 # detectar se o numero seja muito grande
 bgtz $s3, erro
 dton $s2
-add $v0 $v0 $s2
+addu $s5 $v0 $s2
+bgtu $v0 $s5 erro
+move $v0 $s5
 add $s1 $s1 1
 j decimal
+
 
 
 erro: li $v0 4
@@ -131,54 +164,61 @@ li $v0 10 # exit
 syscall
 
 fim: 
+bne $s4 0x80000000 continue 
+bgtu $v0 $s4 erro
+subu $v0 $zero $v0
+continue:
 clearCompleteStack
 .end_macro
 
+.macro testAsciiToNumber %label
+la $t0 %label
+asciiToNumber $t0
+move $a0 $v0
+li $v0 1
+syscall
+li $a0 0x0a
+li $v0 11
+syscall
+.end_macro
+
+.macro testAsciiToNumberUnsigned %label
+la $t0 %label
+asciiToNumber $t0
+move $a0 $v0
+li $v0 36
+syscall
+li $a0 0x0a
+li $v0 11
+syscall
+.end_macro
+
 .text
+
+# Exemplo de uso:
 la $t0 teste1
 asciiToNumber $t0
-move $a0 $v0
-li $v0 1
-syscall
-li $a0 0x0a
-li $v0 11
-syscall
 
-la $t0 teste2
-asciiToNumber $t0
-move $a0 $v0
-li $v0 1
-syscall
-li $a0 0x0a
-li $v0 11
-syscall
+testAsciiToNumber teste1
+testAsciiToNumber teste2
+testAsciiToNumber teste3
+testAsciiToNumberUnsigned teste4
+testAsciiToNumberUnsigned teste5
+testAsciiToNumber teste6
+testAsciiToNumber teste7
+testAsciiToNumber teste8
+testAsciiToNumber teste9
+testAsciiToNumber teste10
+testAsciiToNumber teste11
+testAsciiToNumber teste12
+#Erros:
+#testAsciiToNumber teste13
+#testAsciiToNumber teste14
+#testAsciiToNumber teste15
+#testAsciiToNumber teste16
+#testAsciiToNumber teste17
+#testAsciiToNumber mensagem
 
-la $t0 teste3
-asciiToNumber $t0
-move $a0 $v0
-li $v0 1
-syscall
-li $a0 0x0a
-li $v0 11
-syscall
-
-la $t0 teste4
-asciiToNumber $t0
-move $a0 $v0
-li $v0 1
-syscall
-li $a0 0x0a
-li $v0 11
-syscall
-
-la $t0 teste5
-asciiToNumber $t0
-move $a0 $v0
-li $v0 1
-syscall
-li $a0 0x0a
-li $v0 11
-syscall
 
 fim:
 li $v0 10
