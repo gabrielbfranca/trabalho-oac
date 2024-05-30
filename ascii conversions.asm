@@ -22,6 +22,7 @@ mensagem: .asciiz "oi"
 mensagemDeErro1: "Erro número inválido: "
 
 .include "macroStack.asm"
+.include "stringManipulation.asm"
 
 # aqui nesse arquivo:
 # decimal é "1" : string de 0-9
@@ -86,6 +87,8 @@ letra: add %registrador %registrador 9
 and %registrador %registrador 0x0f
 end:
 .end_macro
+
+##########################################################################################
 
 # Converte a string para um número
 # %string é um registrador com um endereço para uma string
@@ -171,6 +174,48 @@ continue:
 clearCompleteStack
 .end_macro
 
+##########################################################################################
+
+# Convete o número no registrador para uma string ascii com o número hexadecimal correspondente
+# %registrador contem o registrador que possui o número a ser convertido
+# v0 recebe o endereço da string 
+.macro numberToAscii %registrador
+.data
+saida: .space 8
+.text
+newCompleteStack
+
+move $s0 %registrador # numero para ser convertido
+li $s1 7 # indice
+la $v0 saida
+
+loop:
+and $s2 $s0 0xf #seleciona os bits
+bgt $s2 9 letras
+li $s3 0x0030
+
+save:
+add $s3 $s3 $s2
+add $s4 $v0 $s1
+sb $s3 ($s4)
+add $s1 $s1 -1
+srl $s0 $s0 4
+bge $s1 0 loop
+j fim
+
+letras:
+li $s3 0x0060
+add $s2 $s2 -9
+j save
+
+fim:
+# v0 tem o endereço da stirng
+clearCompleteStack
+.end_macro
+
+##########################################################################################
+
+# Macros apenas para ajudar nos testes
 .macro testAsciiToNumber %label
 la $t0 %label
 asciiToNumber $t0
@@ -218,6 +263,35 @@ testAsciiToNumber teste12
 #testAsciiToNumber teste16
 #testAsciiToNumber teste17
 #testAsciiToNumber mensagem
+
+li $a0 0xffffffff
+numberToAscii $a0
+move $a0 $v0
+li $v0 4
+syscall
+print_EOL
+
+li $a0 0x10101010
+numberToAscii $a0
+move $a0 $v0
+li $v0 4
+syscall
+print_EOL
+
+li $a0 1024
+numberToAscii $a0
+move $a0 $v0
+li $v0 4
+syscall
+print_EOL
+
+li $a0 0
+numberToAscii $a0
+move $a0 $v0
+li $v0 4
+syscall
+print_EOL
+
 
 
 fim:
