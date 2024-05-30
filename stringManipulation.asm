@@ -2,9 +2,9 @@
  
 str1: .asciiz ".data"
 str2: .asciiz ".data"
-str1:
+str3:
 .asciiz "00000001 : "
-str2:
+str4:
 .asciiz "00000003;"
 result:
 .space 18
@@ -144,6 +144,12 @@ finish:
 	la $a0, %str
 	syscall
 	.end_macro
+	
+.macro print_EOL
+li $a0 0x0a
+li $v0 11
+syscall
+.end_macro
 .macro cleanSpace(%space) # not functional
 
 	addi $sp, $sp, -12
@@ -220,9 +226,9 @@ finish:
 .end_macro
 
 
-concatenateString(str1, str2, result)
-print_str (result)
-cleanSpace(result)
+#concatenateString(str1, str2, result)
+#print_str (result)
+#cleanSpace(result)
 
 
 
