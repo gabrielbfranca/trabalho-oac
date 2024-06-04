@@ -127,6 +127,96 @@ lw $t5 0($sp)
 add $sp $sp 36
 .end_macro
 
+.include "macroStack.asm"
+
+##################################################
+# Adiciona uma %Word ao final do array em ArrayList
+.macro ArrayList.AppendWord %ArrayList %Word
+newCompleteStack
+add $sp $sp -4
+sw %word -4($fp)
+
+move $s0 %ArrayList
+
+add $s3 $fp -4
+li $s2 0
+loop:
+add $s1 $s2 $s3
+lb $s1 ($s1)
+ArrayList.AppendByte $s0 $s1
+add $s2 $s2 1
+blt $s2 4 loop
+
+clearCompleteStack
+.end_macro
+
+##################################################
+# Deleta o byte na posição %Index e junta a lista
+.macro ArrayList.DeleteAt %ArrayList %Index
+.data
+mensagemErroIndex: .asciiz "ArrayList: index especificado não faz parte do array"
+.align 2
+.text
+newCompleteStack # ArrayList.DeleteAt %ArrayList %Index
+add $sp $sp -4
+sw %ArrayList -4($fp)
+add $s1 $zero %Index # truque para permitir que %index seja tanto imediato quanto registrador
+lw $s0 -4($fp)
+#  $s1 - index
+
+lw $s2 8($s0) # tamanho atual do array
+
+bge $s1 $s2 erroIndex
+blt $s1 0 erroIndex
+
+add $s2 $s2 1
+add $s3 $s1 1 # indice
+lw $s6 ($s0) # array
+loop:
+add $s5 $s6 $s3 # $s5 endereço do byte sendo lido
+lb $s4 ($s5) # byte a ser escrito
+add $s5 $s5 -1 # endereço para salvar
+sb $s4 ($s5)
+add $s3 $s3 1
+blt $s3 $s2 loop
+
+j fim
+
+erroIndex:
+li $v0 4
+la $a0 mensagemErroIndex
+syscall
+li $v0 10
+syscall
+
+fim:
+add $s2 $s2 -2
+sw $s2 8($s0)
+clearCompleteStack
+.end_macro
+
+##################################################
+# Junta o %Array no final de %ArrayList, %Array permance inalterado
+.macro ArrayList.JoinArrays %ArrayList %Array
+newCompleteStack # ArrayList.JoinArrays %ArrayList %Array
+add $sp $sp -8
+sw %ArrayList -4($fp)
+sw %Array -8($fp)
+lw $s0 -4($fp)
+lw $s1 -8($fp)
+
+li $s2 0 # index
+loop:
+add $s3 $s2 $s1
+lb $s4 ($s3)
+beq $s4 0x00 fim
+ArrayList.AppendByte $s0 $s4
+add $s2 $s2 1
+j loop
+
+fim:
+clearCompleteStack
+.end_macro
 
 # Shortcuts
 .macro AL.C %regRetorno
@@ -138,4 +228,12 @@ ArrayList.Create %regRetorno %capacidade
 .macro AL.AB %ArrayList %Byte
 ArrayList.AppendByte %ArrayList %Byte
 .end_macro
-
+.macro AL.AW %ArrayList %Word
+ArrayList.AppendWord %ArrayList %Word
+.end_macro
+.macro AL.DA %ArrayList %_Index
+ArrayList.DeleteAt %ArrayList %_Index
+.end_macro
+.macro AL.JA %ArrayList %_Array
+ArrayList.JoinArrays %ArrayList %_Array
+.end_macro
