@@ -1,8 +1,8 @@
 .data
 mensagemDeErro1: "Erro número inválido: "
 
-.include "macroStack.asm"
-.include "stringManipulation.asm"
+# .include "macroStack.asm" arquivo que usa desse precisa incluir macroStack.asm
+# .include "stringManipulation.asm" arquivo que usa desse precisa incluir stringManipulation.asm
 
 # aqui nesse arquivo:
 # decimal é "1" : string de 0-9
@@ -161,7 +161,7 @@ clearCompleteStack
 # v0 recebe o endereço da string 
 .macro numberToAscii %registrador
 .data
-saida: .space 8
+saida: .space 9
 .text
 newCompleteStack
 
