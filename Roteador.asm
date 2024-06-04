@@ -14,7 +14,7 @@ llw: .asciiz "lw"
 lbeq: .asciiz "beq"
 lj: .asciiz "j"
 lsrl: .asciiz "srl"
-# esse "l" é necessário pois não pode ter label com nome de instrução
+# esse "l" ï¿½ necessï¿½rio pois nï¿½o pode ter label com nome de instruï¿½ï¿½o
 
 .align 2
 
@@ -46,7 +46,7 @@ buffer: .space 4  # Adjust size as needed (modify if different)
 my_space: .space 18
 
 file: .asciiz "example_saida_simples.asm"
-saida: .asciiz "teste.asm"
+saida: .asciiz "teste2.asm"
 
 registrador: .asciiz "registrador!\n"
 imediato: .asciiz "imdeidato!\n"
@@ -97,22 +97,22 @@ jal Roteador
 li $v0 10
 syscall
 
-# $a0 contem a string da instrução
+# $a0 contem a string da instruï¿½ï¿½o
 Roteador: 
 newCompleteStack
 
 print_str
 EOL
 
-li $s0 0 #instrução
+li $s0 0 #instruï¿½ï¿½o
 
 lw $t0 lenghtTabela
-sll $t0 $t0 2 # multiplica por 4, será util no meio do codigo
+sll $t0 $t0 2 # multiplica por 4, serï¿½ util no meio do codigo
 
 la $t2 tabelaOpcode
 li $t3 0 # indice da coluna
 
-# o objetivo aqui é descobrir em qual coluna da tabela a string em $a0 está
+# o objetivo aqui ï¿½ descobrir em qual coluna da tabela a string em $a0 estï¿½
 # for string in tabelaOpcode do
 Roteador.Coluna:
 add $t5 $t3 $t2
@@ -158,13 +158,13 @@ beqal $a0 0x06 Roteador.Sa
 # a partir desse ponto $v0 possui o valor a adicionar
 
 Roteador.Escrever:
-# descobrir posição do valor de $v0
+# descobrir posiï¿½ï¿½o do valor de $v0
 srl $t6 $t4 2
 la $t7 quantidadeDeShamt
 add $t6 $t6 $t7 
 lb $t6 ($t6)
 sllv $v0 $v0 $t6
-add $s0 $s0 $v0 # valor adicionado na instrução
+add $s0 $s0 $v0 # valor adicionado na instruï¿½ï¿½o
 
 Roteador.Ignora:
 add $t4 $t4 4
