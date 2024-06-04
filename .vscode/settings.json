@@ -4,4 +4,7 @@
         "editor.unicodeHighlight.invisibleCharacters": false,
         "files.encoding": "iso88591"
     },
+    "[mips]": {
+        "files.encoding": "iso88591"
+    }
 }
