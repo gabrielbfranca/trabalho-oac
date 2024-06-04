@@ -19,6 +19,12 @@ readc: # usa arquivo : $s0, retorna caracter em: $v0
   
   error_message: .asciiz "Error in parser: not enough space"
 .text
+add $sp $sp -16
+sw $t0 12($sp)
+sw $t1 8($sp)
+sw $t2 4($sp)
+sw $t3 0($sp)
+
 la $t2, %space
 la $t3, %buffer
 loop:
@@ -62,7 +68,13 @@ append:
   j loop        # continue reading the file
 
 finish:
+lw $t0 12($sp)
+lw $t1 8($sp)
+lw $t2 4($sp)
+lw $t3 0($sp)
+add $sp $sp 16
 .end_macro
+
 .macro print_str (%str)
 	.text
 	li $v0, 4
@@ -92,136 +104,3 @@ finish:
  	lw $t2, 0($sp)
  	addi $sp, $sp, 12
 .end_macro
-# Example usage (replace "myfile.txt" and modify buffer size if needed)
-.data
-  buffer: .space 4  # Adjust size as needed (modify if different)
-  my_space: .space 18
-  filepath:    .asciiz "example_saida.asm"
-  quebra: .asciiz "\n"
-.text
-main:
-  # Open the file (replace with your code to open the file and store descriptor)
-  # ...
-  # reads_file saved file descriptor: $s0
-  li    $v0, 13       
-  la    $a0, filepath      
-  li    $a1, 0        #0: read, 1: write
-  li    $a2, 0        # no mode
-  syscall             
-  move  $s0, $v0      
-# end
-
-  # Call the read_file_to_space macro with reserved space and file descriptor
-  read_file_to_space(buffer, my_space, $s0)
-  print_str(my_space)
-  
-  cleanSpace(my_space)
-  
-  read_file_to_space(buffer, my_space, $s0)
-  print_str(my_space)
- 
-  cleanSpace(my_space)
-  
-  read_file_to_space(buffer, my_space, $s0)
-  print_str(my_space)
-
-  cleanSpace(my_space)
-  
-  
-  read_file_to_space(buffer, my_space, $s0)
-  print_str(my_space)
-
-  cleanSpace(my_space)
-  
-  read_file_to_space(buffer, my_space, $s0)
-  print_str(my_space)
-
-  cleanSpace(my_space)
-  
-  
-  read_file_to_space(buffer, my_space, $s0)
-  print_str(my_space)
-
-  cleanSpace(my_space)
-  
-  read_file_to_space(buffer, my_space, $s0)
-  print_str(my_space)
-
-  cleanSpace(my_space)
-  
-  
-  read_file_to_space(buffer, my_space, $s0)
-  print_str(my_space)
-
-  cleanSpace(my_space)
-  
-  
-  read_file_to_space(buffer, my_space, $s0)
-  print_str(my_space)
-
-  cleanSpace(my_space)
-  
-  
-  read_file_to_space(buffer, my_space, $s0)
-  print_str(my_space)
-
-  cleanSpace(my_space)
-  
-  
-  read_file_to_space(buffer, my_space, $s0)
-  print_str(my_space)
-
-  cleanSpace(my_space)
-  
-  
-  read_file_to_space(buffer, my_space, $s0)
-  print_str(my_space)
-
-  cleanSpace(my_space)
-  
-    read_file_to_space(buffer, my_space, $s0)
-  print_str(my_space)
-
-  cleanSpace(my_space)
-  
-    read_file_to_space(buffer, my_space, $s0)
-  print_str(my_space)
- 
-  cleanSpace(my_space)
-  
-    read_file_to_space(buffer, my_space, $s0)
-  print_str(my_space)
-
-  cleanSpace(my_space)
-  
-    read_file_to_space(buffer, my_space, $s0)
-  print_str(my_space)
-
-  cleanSpace(my_space)
-  
-    read_file_to_space(buffer, my_space, $s0)
-  print_str(my_space)
-
-  cleanSpace(my_space)
-  
-    read_file_to_space(buffer, my_space, $s0)
-  print_str(my_space)
-
-  cleanSpace(my_space)
-  
-  
-  
-  # ... (your code after processing the data in reserved space)
-
-  # Close the file (replace with your code to close the file)
-  # ...
-  close_file:
-   
-    li   $v0, 16      
-    move $a0, $s0      
-    syscall
-
-	
-		
-  li $v0, 10  # syscall code for exit
-  syscall
