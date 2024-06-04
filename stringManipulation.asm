@@ -12,6 +12,79 @@ result:
 .text
 
 # end
+# Se for igual $v0 obtém 1, se não 0
+.macro compareStringsReg %str1 %str2 
+ addi $sp, $sp, -20
+ sw $ra, 20($sp)
+ sw $t1, 16($sp) 
+ sw $t2, 12($sp)
+ sw $t3, 8($sp)
+ sw $t4, 4($sp)
+ sw $t6, 0($sp)
+ 
+ la $t1, (%str1)
+ la $t2, (%str2)
+
+loop:
+  # Load characters from strings
+  lb $t3, 0($t1)
+  lb $t4, 0($t2)
+  
+    # Check if characters are equal
+  sub $t6, $t3, $t4
+  
+
+  # Check for end of strings (newline character)
+  beq $t3, 0, end_loop  # 10 is the ASCII code for newline 0 is code for null
+  beq $t4, 0, end_loop
+  
+  beq $t6, $zero, continueEqual
+
+
+  # Characters not equal, exit loop
+  j end_loop
+
+continueEqual:
+  # Both characters are equal, increment pointers
+  addi $t1, $t1, 1
+  addi $t2, $t2, 1
+  j loop
+
+end_loop:
+  # Check if characters were equal until the end
+  beq $t6, $zero, same  # Move 1 to result register
+
+  # Characters not the same, move 0 to result register
+  li $v0, 0
+  j exit
+  
+same:
+  # Characters are the same, move 1 to result register
+  li $v0, 1
+exit:
+	
+ 	lw $ra, 20($sp)
+ 	lw $t1, 16($sp) 
+ 	lw $t2, 12($sp)
+ 	lw $t3, 8($sp)
+ 	lw $t4, 4($sp)
+ 	lw $t6, 0($sp)
+ 	addi $sp, $sp, 20
+ 	
+.end_macro
+
+.macro compareStringsLabel (%str1, %str2)
+add $sp $sp -8
+sw $t0 4($sp)
+sw $t1 0($sp)
+la $t0 %str1
+la $t1 %str2
+compareStringsReg $t0 $t1
+lw $t0 4($sp)
+lw $t1 0($sp)
+add $sp $sp 8
+.end_macro
+
 .macro compare_strings (%str1, %str2, %result_reg)
  addi $sp, $sp, -20
  sw $ra, 20($sp)
@@ -70,17 +143,19 @@ exit:
  	lw $t6, 0($sp)
  	addi $sp, $sp, 20
 .end_macro
+
   # Call the macro for comparison, provide a register for result
   # se for igual $s0 = 1, se for diferente $s0 = 0
 main:
   #copy_string_to_space(str1, espaco1)
   #copy_string_to_space(str2, espaco2)  
-  compare_strings (str1, str2, $s3)
+  compareStringsLabel (str1, str2)
 
 # concat strings and clear
 ##################################################
 
-.macro concatenateString(%str1, %str2, %result) #result Ã© um espaÃ§o
+
+.macro concatenateString(%str1, %str2, %result) #result é um espaço
 .text
 # Copy first string to result buffer
 
@@ -138,18 +213,7 @@ finish:
 	addi $sp, $sp, 24
 .end_macro
 
-.macro print_str (%str)
-	.text
-	li $v0, 4
-	la $a0, %str
-	syscall
-	.end_macro
-	
-.macro print_EOL
-li $a0 0x0a
-li $v0 11
-syscall
-.end_macro
+
 .macro cleanSpace(%space) # not functional
 
 	addi $sp, $sp, -12
@@ -174,56 +238,7 @@ syscall
  	addi $sp, $sp, 12
 .end_macro
 
-.macro write_to_file(%string, %file_descriptor)
-.data
-  error_message: .asciiz "Error writing to file."
-.text
-  # Get string length (excluding null terminator)
-  addi $sp, $sp, -20
-  sw $ra, 20($sp)
-  sw $a2, 16($sp)
-  sw $a1, 12($sp)
-  sw $t2, 8($sp)
-  sw $t1, 4($sp)
-  sw $t0, 0($sp)
-  
-  move $a1, %string
-  li $t0, 0  # counter for string length
-  la $t2, %string
-loop:
-    lb $t1, 0($t2)  # load byte from string address
-    beqz $t1, done_strlen  # branch if null terminator found
-    addi $t2, $t2, 1  # move to next character
-    addi $t0, $t0, 1  # increment counter
-    j loop
-  done_strlen:
 
-  # Write the string to the file
-  li $v0, 15    # syscall code for write
-  move $a0, %file_descriptor  # use provided file descriptor
-  move $a2, $t0  # string length (excluding null terminator)
-  syscall
-
-  # Check if write was successful
-  
-  bne $v0, -1, finish
-write_error:
-  # Handle error (e.g., print message)
-  li $v0, 4    # syscall code for print string
-  la $a0, error_message  # load error message address
-  syscall
-  li $v0, 10
-  syscall
-
-finish:
-  	lw $ra, 20($sp)
-  	lw $a2, 16($sp)
-  	lw $a1, 12($sp)
-  	sw $t2, 8($sp)
-  	lw $t1, 4($sp)
-  	lw $t0, 0($sp)
-  	addi $sp, $sp, 20
-.end_macro
 
 
 #concatenateString(str1, str2, result)
