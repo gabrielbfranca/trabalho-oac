@@ -3,6 +3,7 @@
 
 ###################################################
 # $a0 - nome do arquivo
+# $v0 - file descriptorS
 .macro openFile %flag # 0: read, 1: write
 .data 
 mensagemErro: .asciiz "Erro na abertura do arquivo: "
@@ -64,6 +65,49 @@ finish:
   	lw $t0, 0($sp)
   	addi $sp, $sp, 12
 .end_macro
+
+.include "ArrayList.asm"
+#.include "iostream.asm"
+.include "readFileBySpace.asm"
+#################################
+# $a0 - file descriptor
+# $v0 - ArrayList com todo o texto do arquivo
+# $v1 - tamanho do texto
+.macro readFile
+.data 
+.align 2
+space: .space 512
+.space 4
+mensagemDeErro: .asciiz "Erro na leitura do arquivo"
+.text
+newCompleteStack
+li $v1 0
+AL.C $s0 512
+move $s3 $a0
+readFile.loop:
+li $v0 14
+move $a0 $s3
+la $a1 space
+li $a2 512
+syscall
+bltz $v0 erro
+beq $v0 0 fim
+add $v1 $v1 $v0
+AL.FJA $s0 $a1
+cleanSpace2 space 512
+j readFile.loop
+
+erro:
+print_str mensagemDeErro
+li $v0 10 
+syscall
+
+
+fim:
+move $v0 $s0
+clearCompleteStack
+.end_macro
+
 
 
 
