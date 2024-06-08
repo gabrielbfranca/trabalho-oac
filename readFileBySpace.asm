@@ -75,12 +75,41 @@ lw $t3 0($sp)
 add $sp $sp 16
 .end_macro
 
-.macro print_str (%str)
-	.text
-	li $v0, 4
-	la $a0, %str
-	syscall
-	.end_macro
+
+#.include "ArrayList.asm"
+#.include "macroStack.asm"
+# $v0 string
+# $v1 char lidas
+.macro getWordInString %string %index
+newCompleteStack
+add $sp $sp -4
+sw %string ($sp)
+add $s3 $zero %index # index
+add $s4 $zero %index
+lw $s0 ($sp) #string
+AL.C $s1 8
+
+loop:
+add $s2 $s3 $s0
+lb $s2 ($s2)
+beq $s2 0x20 fim
+beq $s2 0x0a fim
+beq $s2 0x00 fim2
+ArrayList.FastAppendByte $s1 $s2
+add $s3 $s3 1
+j loop
+
+fim2:
+add $s3 $s3 -1 
+fim:
+lw $v0 ($s1)
+add $v1 $s3 1
+sub $v1 $v1 $s4
+clearCompleteStack
+.end_macro
+
+
+
 .macro cleanSpace(%space) # not functional
 
 	addi $sp, $sp, -12
@@ -104,3 +133,29 @@ add $sp $sp 16
  	lw $t2, 0($sp)
  	addi $sp, $sp, 12
 .end_macro
+
+.macro cleanSpace2 %space %size # not functional
+
+	addi $sp, $sp, -12
+ 	sw $ra, 12($sp)
+ 	sw $t0, 8($sp)
+ 	sw $t1, 4($sp)
+ 	sw $t2, 0($sp)
+ 
+	la $t0, %space  # Load address of my_buffer
+	li $t1, 0          # Load value to write (zero)
+	addi $t2, $t0, %size   # Calculate end address (10 bytes)
+
+	loop:
+	  sw $t1, ($t0)    # Store zero at current address
+	  addi $t0, $t0, 4   # Increment address
+	  blt $t0, $t2, loop  # Loop until end address reached
+
+ 	lw $ra, 12($sp)
+ 	lw $t0, 8($sp)
+ 	lw $t1, 4($sp)
+ 	lw $t2, 0($sp)
+ 	addi $sp, $sp, 12
+.end_macro
+
+
