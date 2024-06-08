@@ -73,6 +73,70 @@ exit:
  	
 .end_macro
 
+# Se for igual $v0 obtém 1, se não 0
+.macro fastCompareStringsReg %str1 %str2
+add $sp $sp -4
+sw %str1 ($sp)
+move $t1 %str2
+lw $t2 ($sp)
+
+loop:
+  # Load characters from strings
+  lw $t3, 0($t1)
+  lw $t4, 0($t2)
+  
+  # Check if characters are equal
+  sub $t0, $t3, $t4
+  
+
+  # Check for end of strings (newline character)
+  beq $t3, 0x00, end_loop  # 10 is the ASCII code for newline 0 is code for null
+  beq $t4, 0x00, end_loop
+  
+  beq $t0, $zero, continueEqual
+
+
+  # Characters not equal, exit loop
+  j end_loop
+
+continueEqual:
+  # Both characters are equal, increment pointers
+  addi $t1, $t1, 4
+  addi $t2, $t2, 4
+  j loop
+
+end_loop:
+  # Check if characters were equal until the end
+  beq $t0, $zero, same  # Move 1 to result register
+
+  # Characters not the same, move 0 to result register
+  li $v0, 0
+  j exit
+  
+same:
+  # Characters are the same, move 1 to result register
+  li $v0, 1
+exit:
+ addi $sp, $sp, 4
+.end_macro
+
+.macro stringInList %str %array
+add $sp $sp -4
+sw %str ($sp)
+move $t6 %Array
+lw $t7 ($sp)
+
+loop:
+lw $t8 ($t6)
+fastCompareStringsReg $t7 $t8
+beq $v0 1 stringInList.Fim
+add $t6 $t6 4
+beq $t6 0x00 stringInList.Fim
+j loop:
+
+stringInList.Fim:
+.end_macro
+
 .macro compareStringsLabel (%str1, %str2)
 add $sp $sp -8
 sw $t0 4($sp)
