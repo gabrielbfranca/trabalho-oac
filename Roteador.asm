@@ -14,18 +14,18 @@ llw: .asciiz "lw"
 lbeq: .asciiz "beq"
 lj: .asciiz "j"
 lsrl: .asciiz "srl"
-# esse "l" ï¿½ necessï¿½rio pois nï¿½o pode ter label com nome de instruï¿½ï¿½o
+# esse "l" é necessário pois não pode ter label com nome de instrução
 
 .align 2
 
 tabelaOpcode: .word ladd laddi lmflo llw lbeq lj lsrl
                  # add  addi mflo lw   beq  j    srl
 tabela26.31: .byte 0x40 0x44 0x40 0x63 0x44 0x42 0x40 # numero do opcode
-tabela21.25: .byte 0x01 0x01 0x40 0x01 0x01 0x00 0x40 # reg, target, literal
+tabela21.25: .byte 0x01 0x01 0x40 0x00 0x01 0x00 0x40 # reg, target, literal
 tabela16.20: .byte 0x01 0x01 0x40 0x01 0x01 0x00 0x01 # reg, literal
 tabela11.15: .byte 0x01 0x02 0x01 0x00 0x00 0x00 0x01 # reg, imediate, offset pc, offset, literal
 tabela6.10:  .byte 0x40 0x00 0x40 0x00 0x00 0x00 0x06 # literal, shamt
-tabela0.5:   .byte 0x41 0x00 0x52 0x03 0x04 0x05 0x42 # literal
+tabela0.5:   .byte 0x50 0x00 0x52 0x03 0x04 0x05 0x42 # literal
 
 # 0x00 ignora
 # 0x01 indentica registrador
@@ -39,8 +39,25 @@ tabela0.5:   .byte 0x41 0x00 0x52 0x03 0x04 0x05 0x42 # literal
 .align 2
 
 tabelaValores: .word tabela26.31 tabela21.25 tabela16.20 tabela11.15 tabela6.10 tabela0.5
-quantidadeDeShamt: .byte 26 21 16 11 6 0
 
+                        # add  addi mflo lw   beq  j    srl
+quantidadeDeShamt1: .byte 26   26   26   26   26   26   26   # geralmente sempre 26-31
+quantidadeDeShamt2: .byte 11   16   21   16   21   21   21   # 21-25
+quantidadeDeShamt3: .byte 21   21   16   16   16   16   11   # 16-20
+quantidadeDeShamt4: .byte 16    0   11   11   11   11   16   # 11-15
+quantidadeDeShamt5: .byte  6    0    6    6    6    6    6   # 6-10
+quantidadeDeShamt6: .byte  0    0    0    0    0    0    0   # 0-5
+
+# opcode = 26
+# rs = 21
+# rt = 16
+# rd = 11
+
+.align 2
+
+quantidadeDeShamtTable: .word quantidadeDeShamt1 quantidadeDeShamt2 quantidadeDeShamt3 quantidadeDeShamt4 quantidadeDeShamt5 quantidadeDeShamt6
+
+.align 2
 
 buffer: .space 4  # Adjust size as needed (modify if different)
 my_space: .space 18
@@ -107,10 +124,10 @@ EOL
 li $s0 0 #instruï¿½ï¿½o
 
 lw $t0 lenghtTabela
-sll $t0 $t0 2 # multiplica por 4, serï¿½ util no meio do codigo
+sll $t0 $t0 2 # multiplica por 4, será util no meio do codigo
 
 la $t2 tabelaOpcode
-li $t3 0 # indice da coluna
+li $t3 0 # indice da coluna, anda de 4 em 4
 
 # o objetivo aqui ï¿½ descobrir em qual coluna da tabela a string em $a0 estï¿½
 # for string in tabelaOpcode do
@@ -158,13 +175,15 @@ beqal $a0 0x06 Roteador.Sa
 # a partir desse ponto $v0 possui o valor a adicionar
 
 Roteador.Escrever:
-# descobrir posiï¿½ï¿½o do valor de $v0
-srl $t6 $t4 2
-la $t7 quantidadeDeShamt
-add $t6 $t6 $t7 
-lb $t6 ($t6)
+# descobrir posição do valor de $v0
+la $t7 quantidadeDeShamtTable
+add $t6 $t4 $t7 
+lw $t6 ($t6)
+add $t6 $t6 $t3
+lb $t6 ($t6) # $t6 possui o shift 
+
 sllv $v0 $v0 $t6
-add $s0 $s0 $v0 # valor adicionado na instruï¿½ï¿½o
+add $s0 $s0 $v0 # valor adicionado na instrução
 
 Roteador.Ignora:
 add $t4 $t4 4
@@ -184,6 +203,7 @@ syscall # termina o programa
 Roteador.Fim:
 jal escreverInstrucao
 clearCompleteStack
+j $ra
 
 escreverInstrucao:
 numberToAscii $v0
