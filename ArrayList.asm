@@ -25,10 +25,10 @@
 # que chamou alguma delas
 
 
-# Cria um ArrayList com 8 de capacidade
+# Cria um ArrayList com 16 de capacidade
 # Coloca no %regRetorno um ponteiro para um ArrayList
 .macro ArrayList.Create %regRetorno
-ArrayList.Create %regRetorno 8
+ArrayList.Create %regRetorno 16
 .end_macro
 
 # Cria uma ArrayList com um tamanho definido em %capacidade
@@ -43,9 +43,9 @@ li $v0 9 #alocar bytes
 li $a0 12 #alocar 3 words
 syscall
 move $t0 $v0 # ponteiro para ArrayList
-add $a0 $zero %capacidade #aloca 1 byte a mais para garantir que o array termine em um
-add $a0 $a0 1             #caracter nulo
-li $v0 9
+add $a0 $zero %capacidade #aloca 4 byte a mais para garantir que o array termine em uma
+add $a0 $a0 4             #word nula
+li $v0 9                  # nota: talvez um caracter já seja bom o suficiente, mas vai saber
 syscall
 sw $v0   0($t0)   # 0(%regRetorno) endereço do array em si
 sw $a0   4($t0)   # 4(%regRetorno) capacidade do array
@@ -92,7 +92,7 @@ j fim
 ExpandArray:
 sll $t2 $t2 1 # duplicar o tamanho
 move $a0 $t2
-add $a0 $a0 1 # 1 a mais do que a capacidade para que o array termine em caracter nulo
+add $a0 $a0 4 # 4 a mais para que o array termine em uma word nula
 li $v0 9
 syscall
 move $t4 $v0
@@ -116,8 +116,8 @@ fim:
 add $t3 $t3 1
 sw $t3 8($t0)
 
-sw $v0 32($sp)
-sw $a0 28($sp)
+lw $v0 32($sp)
+lw $a0 28($sp)
 lw $t0 20($sp)
 lw $t1 16($sp)
 lw $t2 12($sp)
@@ -134,7 +134,7 @@ add $sp $sp 36
 .macro ArrayList.AppendWord %ArrayList %Word
 newCompleteStack
 add $sp $sp -4
-sw %word -4($fp)
+sw %Word -4($fp)
 
 move $s0 %ArrayList
 
@@ -196,6 +196,68 @@ clearCompleteStack
 .end_macro
 
 ##################################################
+# Deleta o byte na posição %Index e junta a lista
+.macro ArrayList.FastDeleteAt %ArrayList %Index
+.data
+mensagemErroIndex: .asciiz "ArrayList: index especificado não faz parte do array"
+.align 2
+.text
+# ArrayList.DeleteAt %ArrayList %Index
+add $sp $sp -4
+sw %ArrayList -4($fp)
+add $t1 $zero %Index # truque para permitir que %index seja tanto imediato quanto registrador
+lw $t0 -4($fp)
+#  $s1 - index
+
+lw $t2 8($t0) # tamanho atual do array
+
+bge $t1 $t2 erroIndex
+blt $t1 0 erroIndex
+
+add $t2 $t2 1
+add $t3 $t1 1 # indice
+lw $t6 ($t0) # array
+loop:
+add $t5 $t6 $t3 # $s5 endereço do byte sendo lido
+lb $t4 ($t5) # byte a ser escrito
+add $t5 $t5 -1 # endereço para salvar
+sb $t4 ($t5)
+add $t3 $t3 1
+blt $t3 $t2 loop
+
+j fim
+
+erroIndex:
+li $v0 4
+la $a0 mensagemErroIndex
+syscall
+li $v0 10
+syscall
+
+fim:
+add $t2 $t2 -2
+sw $t2 8($t0)
+.end_macro
+
+##################################################
+# Deleta o byte na posição %Index e junta a lista
+.macro ArrayList.DeleteRange %ArrayList %Start %Number
+newArgsStack
+add $sp $sp -4
+sw %ArrayList ($sp)
+add $a1 %Start $zero
+lw $a0 ($sp)
+
+add $a2 %Number $zero
+loop:
+ArrayList.FastDeleteAt $a0 $a1
+add $a2 $a2 -1
+bgtz $a2 loop
+
+clearArgsStack
+.end_macro
+
+##################################################
 # Junta o %Array no final de %ArrayList, %Array permance inalterado
 .macro ArrayList.JoinArrays %ArrayList %Array
 newCompleteStack # ArrayList.JoinArrays %ArrayList %Array
@@ -218,6 +280,181 @@ fim:
 clearCompleteStack
 .end_macro
 
+##################################################
+# Deleta o ultimo byte do array
+.macro ArrayList.DeleteLast %ArrayList
+newArgsStack
+move $a0 %ArrayList
+lw $a1 ($a0) # array
+lw $a2 8($a0) # tamanho do array
+
+add $a2 $a2 -1 # reduzindo em um o tamanho do array
+sb $a2 8($a0)
+
+add $a3 $a1 $a2 # posição da caractere a ser deletada
+li $a0 0
+sb $a0 ($a3)
+
+clearArgsStack
+.end_macro
+
+
+.include "iostream.asm"
+.include "stringManipulation.asm"
+
+#############################################
+# Usado em listas de string*
+# $v0 recebe o index da string, negativo se não tiver presente
+.macro ArrayList.FindString %ArrayList %String
+.data
+.align 2
+mensagemErro: "Erro palavra desconhecida: "
+.text 
+newCompleteStack
+add $sp $sp -4
+sw %ArrayList ($sp)
+move $a1 %String
+lw $a0 ($sp)
+li $v0 0
+lw $s0 ($a0)
+lw $s1 8($a0) # index
+
+loop:
+add $s1 $s1 -4
+add $s2 $s1 $s0
+lw $s2 ($s2)
+fastCompareStringsReg $s2 $a1
+beq $v0 1 achou 
+bgtz $s1 loop
+li $s2 -1
+#print_str mensagemErro
+#move $a0 $a1
+#print_str
+#li $v0 10
+#syscall
+
+achou:
+move $v0 $s2
+clearCompleteStack
+.end_macro
+
+##################################################
+# Adiciona um %Byte ao final do array em ArrayList
+# cerca de 1.8x vezes mais rapido quando não há expansão
+# +4x mais rapido quando há expansão
+# não salva os registradores $t, $a nem $v
+.macro ArrayList.FastAppendByte %ArrayList %Byte
+add $sp $sp -4
+sw %ArrayList ($sp)
+add $t6 $zero %Byte # dessa forma Byte pode ser tanto imediato quanto registrador
+lw $t0 ($sp)
+
+########
+lw $t1 0($t0) # endereço do array
+lw $t2 4($t0) # capacidade do array
+lw $t3 8($t0) # tamanho do array
+
+beq $t2 $t3 ExpandArray
+j fim
+ExpandArray:
+sll $t2 $t2 1 # duplicar o capacidade
+move $a0 $t2
+add $a0 $a0 4 # 4 a mais do que a capacidade para que o array termine em word nulo
+li $v0 9
+syscall
+move $t4 $v0
+
+sw $t4 0($t0)
+sw $t2 4($t0)
+
+move $t5 $zero # $t5 é um indice
+loop: 
+lw $t2 ($t1) # copia todos os bytes da lista antiga
+sw $t2 ($t4) # para a lista nova
+add $t1 $t1 4
+add $t4 $t4 4
+add $t5 $t5 4
+blt $t5 $t3 loop
+
+lw $t1 0($t0)
+
+fim:
+add $t1 $t1 $t3
+sb $t6 ($t1) # salva o byte
+
+add $t3 $t3 1
+sw $t3 8($t0) # atualiza capacidade
+
+add $sp $sp 4
+.end_macro
+
+##################################################
+# Adiciona uma %Word ao final do array em ArrayList
+# copiado do codigo FastAppendByte, adaptado para conseguir manipular words
+.macro ArrayList.FastAppendWord %ArrayList %Word
+add $sp $sp -4
+sw %ArrayList ($sp)
+add $t6 $zero %Word # dessa forma Word pode ser tanto imediato quanto registrador
+lw $t0 ($sp)
+
+########
+lw $t1 0($t0) # endereço do array
+lw $t2 4($t0) # capacidade do array
+lw $t3 8($t0) # tamanho do array
+
+beq $t2 $t3 ExpandArray
+j fim
+ExpandArray:
+sll $t2 $t2 1 # duplicar o capacidade
+move $a0 $t2
+add $a0 $a0 4 # 4 a mais do que a capacidade para que o array termine em word nulo
+li $v0 9
+syscall
+move $t4 $v0
+
+sw $t4 0($t0)
+sw $t2 4($t0)
+
+move $t5 $zero # $t5 é um indice
+loop: 
+lw $t2 ($t1) # copia todos os bytes da lista antiga
+sw $t2 ($t4) # para a lista nova
+add $t1 $t1 4
+add $t4 $t4 4
+add $t5 $t5 4
+blt $t5 $t3 loop
+
+lw $t1 0($t0)
+
+fim:
+add $t1 $t1 $t3
+sw $t6 ($t1) # salva a word
+
+add $t3 $t3 4
+sw $t3 8($t0) # atualiza capacidade
+
+add $sp $sp 4
+.end_macro
+
+##################################################
+# Junta o %Array no final de %ArrayList, %Array permance inalterado
+.macro ArrayList.FastJoinArrays %ArrayList %_Array
+add $sp $sp -4
+sw %ArrayList ($sp)
+move $t7 %_Array # Array
+lw $t8 ($sp) # ArrayList
+
+li $t9 0 # not index
+loop:
+lw $t9 ($t7)
+beq $t9 0x00000000 fim
+ArrayList.FastAppendWord $t8 $t9
+add $t7 $t7 4
+j loop
+
+fim:
+.end_macro
+
 # Shortcuts
 .macro AL.C %regRetorno
 ArrayList.Create %regRetorno 8
@@ -231,9 +468,18 @@ ArrayList.AppendByte %ArrayList %Byte
 .macro AL.AW %ArrayList %Word
 ArrayList.AppendWord %ArrayList %Word
 .end_macro
-.macro AL.DA %ArrayList %_Index
+.macro AL.DA %ArrayList %_Index # delete byte
 ArrayList.DeleteAt %ArrayList %_Index
 .end_macro
 .macro AL.JA %ArrayList %_Array
 ArrayList.JoinArrays %ArrayList %_Array
+.end_macro
+.macro AL.FJA %ArrayList %_Array
+ArrayList.FastJoinArrays %ArrayList %_Array
+.end_macro
+.macro AL.DL %ArrayList # delete byte
+ArrayList.DeleteLast %ArrayList
+.end_macro
+.macro AL.FS %ArrayList %String
+ArrayList.FindString %ArrayList %String
 .end_macro
