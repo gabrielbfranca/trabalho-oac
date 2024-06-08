@@ -62,9 +62,9 @@ newSimpleStack #8($fp)  - $a0
 # usado no fim de funções que chamaram newArgsStack
 .macro clearArgsStack
 clearSimpleStack
-sw $a3 8($sp) # recupera os valores dos registradores $a
-sw $a2 4($sp)
-sw $a1 0($sp)
+lw $a3 8($sp) # recupera os valores dos registradores $a
+lw $a2 4($sp)
+lw $a1 0($sp)
 
 add $sp $sp 12
 .end_macro
