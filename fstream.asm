@@ -66,9 +66,9 @@ finish:
   	addi $sp, $sp, 12
 .end_macro
 
-.include "ArrayList.asm"
+#.include "ArrayList.asm"
 #.include "iostream.asm"
-.include "readFileBySpace.asm"
+#.include "readFileBySpace.asm"
 #################################
 # $a0 - file descriptor
 # $v0 - ArrayList com todo o texto do arquivo

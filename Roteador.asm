@@ -19,13 +19,20 @@ lsrl: .asciiz "srl"
 .align 2
 
 tabelaOpcode: .word ladd laddi lmflo llw lbeq lj lsrl
-                 # add  addi mflo lw   beq  j    srl
-tabela26.31: .byte 0x40 0x44 0x40 0x63 0x44 0x42 0x40 # numero do opcode
-tabela21.25: .byte 0x01 0x01 0x40 0x00 0x01 0x00 0x40 # reg, target, literal
-tabela16.20: .byte 0x01 0x01 0x40 0x01 0x01 0x00 0x01 # reg, literal
-tabela11.15: .byte 0x01 0x02 0x01 0x00 0x00 0x00 0x01 # reg, imediate, offset pc, offset, literal
-tabela6.10:  .byte 0x40 0x00 0x40 0x00 0x00 0x00 0x06 # literal, shamt
-tabela0.5:   .byte 0x50 0x00 0x52 0x03 0x04 0x05 0x42 # literal
+                 # add  addi addiu addu and  andi beq  bgez bgezal bltzal bne  clo  clz  div  j    jal  jalr jr   lb   lhu  lui  lw   mfhi mflo movn mul  mult nor  or   ori  sb   sll  sllv slt  slti sltu sra  srav srl  sub  subu sw   xor  xori
+tabela26.31: .byte 0x40 0x44 0x45  0x40 0x40 0x46 0x44 0x41 0x41   0x41   0x45 0x5c 0x5c 0x40 0x42 0x43 0x40 0x40 0x60 0x65 0x4f 0x63 0x40 0x40 0x40 0x5c 0x40 0x40 0x40 0x4d 0x68 0x40 0x40 0x40 0x4a 0x40 0x40 0x40 0x40 0x40 0x40 0x6b 0x40 0x4e
+tabela21.25: .byte 0x01 0x01 0x01  0x01 0x01 0x01 0x01 0x01 0x01   0x01   0x01 0x01 0x01 0x01 0x05 0x05 0x01 0x01 0x01 0x01 0x01 0x01 0x40 0x40 0x01 0x01 0x01 0x01 0x01 0x01 0x01 0x40 0x01 0x01 0x01 0x01 0x40 0x01 0x40 0x01 0x01 0x01 0x01 0x01 
+tabela16.20: .byte 0x01 0x01 0x01  0x01 0x01 0x01 0x01 0x41 0x51   0x50   0x01 0x40 0x40 0x01 0x00 0x00 0x40 0x40 0x03 0x03 0x40 0x03 0x40 0x40 0x01 0x01 0x01 0x01 0x01 0x01 0x01 0x01 0x01 0x01 0x01 0x01 0x01 0x01 0x01 0x01 0x01 0x01 0x01 0x01 
+tabela11.15: .byte 0x01 0x02 0x02  0x01 0x01 0x02 0x04 0x04 0x04   0x04   0x04 0x01 0x01 0x40 0x00 0x00 0x40 0x40 0x00 0x00 0x02 0x00 0x01 0x01 0x01 0x01 0x40 0x01 0x01 0x02 0x03 0x01 0x01 0x01 0x02 0x01 0x01 0x01 0x01 0x01 0x01 0x03 0x01 0x02 
+tabela6.10:  .byte 0x40 0x00 0x00  0x40 0x40 0x00 0x00 0x00 0x00   0x00   0x00 0x40 0x40 0x40 0x00 0x00 0x40 0x40 0x00 0x00 0x00 0x00 0x40 0x40 0x40 0x40 0x40 0x40 0x40 0x00 0x00 0x06 0x40 0x40 0x00 0x40 0x06 0x04 0x06 0x40 0x40 0x00 0x40 0x00 
+tabela0.5:   .byte 0x60 0x00 0x00  0x61 0x64 0x00 0x00 0x00 0x00   0x00   0x00 0x61 0x60 0x5a 0x00 0x00 0x49 0x48 0x00 0x00 0x00 0x00 0x50 0x52 0x4b 0x42 0x58 0x67 0x65 0x00 0x00 0x40 0x44 0x6a 0x00 0x6b 0x43 0x47 0x42 0x62 0x63 0x00 0x66 0x00 # literal
+
+# numero do opcode
+# reg, target, literal
+# reg, literal
+# reg, imediate, offset pc, offset, literal
+# literal, shamt
+# literal
 
 # 0x00 ignora
 # 0x01 indentica registrador
@@ -38,20 +45,25 @@ tabela0.5:   .byte 0x50 0x00 0x52 0x03 0x04 0x05 0x42 # literal
 
 .align 2
 
+.eqv rs 21
+.eqv rt 16
+.eqv rd 11
+.eqv imm 0
+.eqv off 0
+
 tabelaValores: .word tabela26.31 tabela21.25 tabela16.20 tabela11.15 tabela6.10 tabela0.5
 
-                        # add  addi mflo lw   beq  j    srl
-quantidadeDeShamt1: .byte 26   26   26   26   26   26   26   # geralmente sempre 26-31
-quantidadeDeShamt2: .byte 11   16   21   16   21   21   21   # 21-25
-quantidadeDeShamt3: .byte 21   21   16   16   16   16   11   # 16-20
-quantidadeDeShamt4: .byte 16    0   11   11   11   11   16   # 11-15
-quantidadeDeShamt5: .byte  6    0    6    6    6    6    6   # 6-10
-quantidadeDeShamt6: .byte  0    0    0    0    0    0    0   # 0-5
+                      #   add  addi addiu addu and  andi beq  bgez bgezal bltzal bne  clo  clz  div  j    jal  jalr jr   lb   lhu  lui  lw   mfhi mflo movn mul  mult nor  or   ori  sb   sll  sllv slt  slti sltu sra  srav srl  sub  subu sw   xor  xori
+quantidadeDeShamt1: .byte 26   26   26    26   26   26   26   26   26     26     26   26   26   26   26   26   26   26   26   26   26   26   26   26   26   26   26   26   26   26   26   26   26   26   26   26   26   26   26   26   26   26   26   26   # geralmente sempre 26-31
+quantidadeDeShamt2: .byte rd   rt   rt    rd   rd   rt   rs   rs   21     21     21   11   21   21    0    0   21   21   16   16   16   16   21   21   21   21   21   21   21   21   21   21   21   21   21   21   21   21   21   21   21   21   21   21   # 21-25
+quantidadeDeShamt3: .byte rs   rs   rs    rs   rs   rs   rt   rt    0      0     16   21   21   16   16   16   16   11    0    0   11    0   16   16   11   11   11   11   11   11   11   11   11   11   11   11   11   11   11   11   11   11   11   11   11   # 16-20
+quantidadeDeShamt4: .byte rt    0    0    rt   rt   imm  off  off  11     11      0   11   11   11   11   11   11   16   11   11    0   11   11   11   16   16   16   16   16   16   16   16   16   16   16   16   16   16   16   16   16   16   16   16   # 11-15
+quantidadeDeShamt5: .byte  6    6    6     6    6    6    6    6    6      6      6    6    6    6    6    6    6    6    6    6    6    6    6    6    6    6    6    6    6    6    6    6    6    6    6    6    6    6    6    6    6    6    6    6   # 6-10
+quantidadeDeShamt6: .byte  0    0    0     0    0    0    0    0    0      0      0    0    0    0    0    0    0    0    0    0    0    0    0    0    0    0    0    0    0    0    0    0    0    0    0    0    0    0    0    0    0    0    0    0   # 0-5
 
 # opcode = 26
-# rs = 21
-# rt = 16
-# rd = 11
+
+# offset = 0
 
 .align 2
 
@@ -114,80 +126,84 @@ jal Roteador
 li $v0 10
 syscall
 
-# $a0 contem a string da instruï¿½ï¿½o
+# $a0 contem a string da instrução
+# $a1 contem o index dessa string no array
 Roteador: 
 newCompleteStack
+move $s1 $a1 
 
 print_str
 EOL
 
-li $s0 0 #instruï¿½ï¿½o
+li $s0 0 #instrução
 
 lw $t0 lenghtTabela
 sll $t0 $t0 2 # multiplica por 4, será util no meio do codigo
 
 la $t2 tabelaOpcode
-li $t3 0 # indice da coluna, anda de 4 em 4
+li $s3 0 # indice da coluna, anda de 4 em 4
 
 # o objetivo aqui ï¿½ descobrir em qual coluna da tabela a string em $a0 estï¿½
 # for string in tabelaOpcode do
 Roteador.Coluna:
-add $t5 $t3 $t2
+add $t5 $s3 $t2
 lw $t5 ($t5) # $t5 tem a string a ser checada
 compareStringsReg $t5 $a0
 beq $v0 1 Roteador.Linha
 
-add $t3 $t3 4 # soma 4 pois estamos caminhando em words
-bgt $t3 $t0 erroOpcodeInexistente
+add $s3 $s3 4 # soma 4 pois estamos caminhando em words
+bgt $s3 $t0 erroOpcodeInexistente
 j Roteador.Coluna
 
 
 ###################
 
 Roteador.Linha:
-li $t4 0 # indice da linha, anda de 4 em 4
-srl $t3 $t3 2 # de word para byte
+li $s4 0 # indice da linha, anda de 4 em 4
+srl $s3 $s3 2 # de word para byte
 Roteador.LinhaLoop:
 la $t2 tabelaValores
-add $t2 $t4 $t2
+add $t2 $s4 $t2
 lw $t2 ($t2)
 
-add $t5 $t3 $t2
-lb $a0 ($t5)
-beq $a0 0x00 Roteador.Ignora # continua
-blt $a0 0x40 Roteador.LerPalavra 
-add $v0 $a0 -0x40 # Roteador.literal
+add $t5 $s3 $t2
+lb $a1 ($t5)
+beq $a1 0x00 Roteador.Ignora # continua
+blt $a1 0x40 Roteador.LerPalavra 
+add $v0 $a1 -0x40 # Roteador.literal
 j Roteador.Escrever
 
 # ler proxima palavra
 Roteador.LerPalavra:
-move $t7 $a0
-read_file_to_space(buffer, my_space, $s1)
-move $a0 $t7
-la $a1 my_space
+move $t6 $v0
+lw $t7 ArrayListTextoEntrada
+getWordInString $t7 $s1 # t7 livre
+move $a0 $v0
+add $s1 $s1 $v1
+move $v0 $t6 # t6 livre
 
-beqal $a0 0x01 Roteador.Registrador
-beqal $a0 0x02 Roteador.Imediato
-beqal $a0 0x03 Roteador.Offset
-beqal $a0 0x04 Roteador.OffsetPc
-beqal $a0 0x05 Roteador.Target
-beqal $a0 0x06 Roteador.Sa
+beqal $a1 0x01 Roteador.Registrador
+beqal $a1 0x02 Roteador.Imediato
+beqal $a1 0x03 Roteador.Offset
+beqal $a1 0x04 Roteador.OffsetPc
+beqal $a1 0x05 Roteador.Target
+beqal $a1 0x06 Roteador.Sa
 # a partir desse ponto $v0 possui o valor a adicionar
 
 Roteador.Escrever:
 # descobrir posição do valor de $v0
 la $t7 quantidadeDeShamtTable
-add $t6 $t4 $t7 
+add $t6 $s4 $t7 
 lw $t6 ($t6)
-add $t6 $t6 $t3
+add $t6 $t6 $s3
 lb $t6 ($t6) # $t6 possui o shift 
 
 sllv $v0 $v0 $t6
 add $s0 $s0 $v0 # valor adicionado na instrução
 
 Roteador.Ignora:
-add $t4 $t4 4
-bgt $t4 20 Roteador.Fim
+add $s4 $s4 4
+bgt $s4 20 Roteador.Fim
 cleanSpace(my_space)
 j Roteador.LinhaLoop
 
@@ -215,6 +231,9 @@ print_str
 jr $ra
 
 
+# $a0 - string que representa o registrador a ser decodificado
+# $a1 - nao mexer
+# $v0 - valor equivalente
 Roteador.Registrador:
 newArgsStack
 print_str registrador
@@ -234,6 +253,11 @@ Roteador.OffsetPc:
 jr $ra #Roteador.OffsetPc end
 
 Roteador.Target:
+la $t0 ArrayListDeLabels.Nomes
+AL.FS $t0 $a0 # v0 tem o index da palavra
+lw $t0 ArrayListDeLabels.Enderecos
+add $t0 $t0 $v0
+lw $v0 ($t0)
 jr $ra #Roteador.Target end
 
 Roteador.Sa:
