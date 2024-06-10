@@ -20,7 +20,7 @@ jal openFile.func.write
 move $s2 $v0 # file descriptor do arquivo de saida
 
 la $a0 arquivo
-jal Parser # usando intrução jal -> Jump target word address beyond 26-bit range
+jal Parser
 
 la $a0 ArrayListTextoEntrada
 lw $a0 ($a0)
