@@ -2296,7 +2296,7 @@ syscall
 #Roteador.Registrador end
 
 Roteador.Imediato:
-li $v0 0
+asciiToNumber $a0
 jr $ra #Roteador.Imediato end
 
 Roteador.Offset:
@@ -2317,8 +2317,25 @@ lw $v0 ($t0)
 jr $ra #Roteador.Target end
 
 Roteador.Sa:
-li $v0 0
+.data
+msgErroSaGrande: .asciiz "Erro: shift amount muito grande: "
+msgErroSaNegativo: .asciiz "Erro: shift amount negativo: "
+.text
+asciiToNumber $a0
+bgt $v0 31 erroSaMuitoGrande
+bltz $v0 erroSaNegativo
 jr $ra #Roteador.Sa end
+
+erroSaMuitoGrande:
+print_str msgErroSaGrande
+print_str
+li $v0 10
+syscall
+erroSaNegativo:
+print_str msgErroSaNegativo
+print_str
+li $v0 10
+syscall
 
 
 # $a0 - string
