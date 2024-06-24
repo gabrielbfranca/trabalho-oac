@@ -2136,13 +2136,163 @@ jr $ra
 # $a1 - nao mexer
 # $v0 - valor equivalente
 Roteador.Registrador:
-newArgsStack
-#print_str registrador
-#print_str
-#EOL
-li $v0 0
-clearArgsStack
-jr $ra #Roteador.Registrador end
+.data
+.align 2
+r$0:    .asciiz "$0\0\0\0"
+.align 2
+r$1:    .asciiz "$1\0\0\0"
+.align 2
+r$2:    .asciiz "$2\0\0\0"
+.align 2
+r$3:    .asciiz "$3\0\0\0"
+.align 2
+r$4:    .asciiz "$4\0\0\0"
+.align 2
+r$5:    .asciiz "$5\0\0\0"
+.align 2
+r$6:    .asciiz "$6\0\0\0"
+.align 2
+r$7:    .asciiz "$7\0\0\0"
+.align 2
+r$8:    .asciiz "$8\0\0\0"
+.align 2
+r$9:    .asciiz "$9\0\0\0"
+.align 2
+r$10:   .asciiz "$10\0\0\0"
+.align 2
+r$11:   .asciiz "$11\0\0\0"
+.align 2
+r$12:   .asciiz "$12\0\0\0"
+.align 2
+r$13:   .asciiz "$13\0\0\0"
+.align 2
+r$14:   .asciiz "$14\0\0\0"
+.align 2
+r$15:   .asciiz "$15\0\0\0"
+.align 2
+r$16:   .asciiz "$16\0\0\0"
+.align 2
+r$17:   .asciiz "$17\0\0\0"
+.align 2
+r$18:   .asciiz "$18\0\0\0"
+.align 2
+r$19:   .asciiz "$19\0\0\0"
+.align 2
+r$20:   .asciiz "$20\0\0\0"
+.align 2
+r$21:   .asciiz "$21\0\0\0"
+.align 2
+r$22:   .asciiz "$22\0\0\0"
+.align 2
+r$23:   .asciiz "$23\0\0\0"
+.align 2
+r$24:   .asciiz "$24\0\0\0"
+.align 2
+r$25:   .asciiz "$25\0\0\0"
+.align 2
+r$26:   .asciiz "$26\0\0\0"
+.align 2
+r$27:   .asciiz "$27\0\0\0"
+.align 2
+r$28:   .asciiz "$28\0\0\0"
+.align 2
+r$29:   .asciiz "$29\0\0\0"
+.align 2
+r$30:   .asciiz "$30\0\0\0"
+.align 2
+r$31:   .asciiz "$31\0\0\0"
+.align 2
+r$zero: .asciiz "$zero\0\0\0"
+.align 2
+r$at:   .asciiz "$at\0\0\0"
+.align 2
+r$v0:   .asciiz "$v0\0\0\0"
+.align 2
+r$v1:   .asciiz "$v1\0\0\0"
+.align 2
+r$a0:   .asciiz "$a0\0\0\0"
+.align 2
+r$a1:   .asciiz "$a1\0\0\0"
+.align 2
+r$a2:   .asciiz "$a2\0\0\0"
+.align 2
+r$a3:   .asciiz "$a3\0\0\0"
+.align 2
+r$t0:   .asciiz "$t0\0\0\0"
+.align 2
+r$t1:   .asciiz "$t1\0\0\0"
+.align 2
+r$t2:   .asciiz "$t2\0\0\0"
+.align 2
+r$t3:   .asciiz "$t3\0\0\0"
+.align 2
+r$t4:   .asciiz "$t4\0\0\0"
+.align 2
+r$t5:   .asciiz "$t5\0\0\0"
+.align 2
+r$t6:   .asciiz "$t6\0\0\0"
+.align 2
+r$t7:   .asciiz "$t7\0\0\0"
+.align 2
+r$s0:   .asciiz "$s0\0\0\0"
+.align 2
+r$s1:   .asciiz "$s1\0\0\0"
+.align 2
+r$s2:   .asciiz "$s2\0\0\0"
+.align 2
+r$s3:   .asciiz "$s3\0\0\0"
+.align 2
+r$s4:   .asciiz "$s4\0\0\0"
+.align 2
+r$s5:   .asciiz "$s5\0\0\0"
+.align 2
+r$s6:   .asciiz "$s6\0\0\0"
+.align 2
+r$s7:   .asciiz "$s7\0\0\0"
+.align 2
+r$t8:   .asciiz "$t8\0\0\0"
+.align 2
+r$t9:   .asciiz "$t9\0\0\0"
+.align 2
+r$k0:   .asciiz "$k0\0\0\0"
+.align 2
+r$k1:   .asciiz "$k1\0\0\0"
+.align 2
+r$gp:   .asciiz "$gp\0\0\0"
+.align 2
+r$sp:   .asciiz "$sp\0\0\0"
+.align 2
+r$s8:   .asciiz "$s8\0\0\0"
+.align 2
+r$ra:   .asciiz "$ra\0\0\0"
+.align 2
+
+registradores: .word r$0 r$1 r$2 r$3 r$4 r$5 r$6 r$7 r$8 r$9 r$10 r$11 r$12 r$13 r$14 r$15 r$16 r$17 r$18 r$19 r$20 r$21 r$22 r$23 r$24 r$25 r$26 r$27 r$28 r$29 r$30 r$31 r$zero r$at r$v0 r$v1 r$a0 r$a1 r$a2 r$a3 r$t0 r$t1 r$t2 r$t3 r$t4 r$t5 r$t6 r$t7 r$s0 r$s1 r$s2 r$s3 r$s4 r$s5 r$s6 r$s7 r$t8 r$t9 r$k0 r$k1 r$gp r$sp r$s8 r$ra 
+
+arrayListRegistradores: .word registradores 256 256
+msgDeErroRegistrador: .asciiz "Registrador não reconhecido: "
+.text
+add $sp $sp -4
+sw $a0 ($sp)
+
+la $t0 arrayListRegistradores
+ArrayList.FindString $t0 $a0
+bltz $v0 erroRegistrador
+srl $v0 $v0 2
+blt $v0 32 registradorResultado
+add $v0 $v0 -32
+
+registradorResultado:
+jr $ra 
+
+
+erroRegistrador:
+print_str msgDeErroRegistrador
+lw $a0 ($sp)
+print_str
+li $v0 10
+syscall
+#Roteador.Registrador end
 
 Roteador.Imediato:
 li $v0 0
