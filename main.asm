@@ -2300,8 +2300,63 @@ asciiToNumber $a0
 jr $ra #Roteador.Imediato end
 
 Roteador.Offset:
-li $v0 0
+.data
+msgErroOffset: .asciiz "Erro em processar o offset: "
+.text
+add $sp $sp -12
+sw $a0 8($sp)
+sw $ra ($sp)
+
+move $t0 $a0
+li $t1 0 #index
+AL.C $t3
+AL.C $t4
+
+offset.loop1:
+add $t2 $t1 $t0
+lb $t2 ($t2)
+add $t1 $t1 1
+beq $t2 0x28 offset.separar
+beq $t2 0x00 offset.erro
+AL.AB $t3 $t2
+j offset.loop1
+
+offset.separar:
+offset.loop2:
+add $t2 $t1 $t0
+lb $t2 ($t2)
+add $t1 $t1 1
+beq $t2 0x29 offset.fim
+beq $t2 0x00 offset.erro
+AL.AB $t4 $t2
+j offset.loop2
+
+offset.fim:
+lw $a0 ($t3)
+lw $t4 ($t4)
+sw $t4 4($sp)
+jal Roteador.Imediato
+
+lw $a0 4($sp)
+sw $v0 4($sp)
+jal Roteador.Registrador
+sll $v0 $v0 21
+lw $t0 4($sp)
+add $v0 $v0 $t0
+
+lw $ra ($sp)
+add $sp $sp 8
 jr $ra #Roteador.Offset end
+
+offset.erro:
+lw $a0 8($sp)
+print_str msgErroOffset
+print_str
+li $v0 10
+syscall
+
+
+
 
 Roteador.OffsetPc:
 li $v0 0
