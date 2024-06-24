@@ -2283,6 +2283,7 @@ blt $v0 32 registradorResultado
 add $v0 $v0 -32
 
 registradorResultado:
+add $sp $sp 4
 jr $ra 
 
 
