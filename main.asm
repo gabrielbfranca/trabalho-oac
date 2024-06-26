@@ -12,14 +12,83 @@ arquivo: .asciiz "example_saida_simples.asm"
 .align 3
 arquivoSaida: .asciiz "teste.asm"
 my_space: .space 16
-.text
 
-# abrir arquivo de saÌda
-la $a0 arquivoSaida
+prompt_msg: .asciiz "digite o nome do arquivo: "
+prompt_out_filename_data: .asciiz "digite o nome do arquivo para sa√≠da de data: "
+prompt_out_filename_text: .asciiz "digite o nome do arquivo para sa√≠da de text: "
+
+# Buffer size (larger for longer names)
+buffer_in: .space 128
+buffer_data_out: .space 128
+buffer_text_out: .space 128
+.text
+############ CLI ##################
+.macro replace_newline_with_null (%str)
+    # $a0 = address of the string
+    # $t0 = temporary register for current character
+    # $t1 = temporary register for address offset
+    
+    la   $a0, %str      # Load the address of the string into $a0
+    li   $t1, 0          # Initialize the offset to 0
+
+replace_loop:
+    lb   $t0, 0($a0)     # Load the byte at the current address
+    beq  $t0, 0, end_replace # If the byte is 0 (null terminator), end the loop
+    beq  $t0, 10, replace   # If the byte is 10 (\n), replace it
+    addi $a0, $a0, 1     # Increment the address to the next character
+    j    replace_loop    # Jump back to the start of the loop
+
+replace:
+    li   $t0, 0          # Load the null terminator value into $t0
+    sb   $t0, 0($a0)     # Store the null terminator at the current address
+    j    end_replace     # Jump to the end of the loop
+
+end_replace:
+.end_macro
+
+# Print prompt
+  la $a0, prompt_msg
+  li $v0, 4
+  syscall
+
+  # Read user input into buffer
+  la $a0, buffer_in
+  li $v0, 8
+  li $a1, 128
+  syscall
+  replace_newline_with_null (buffer_in)
+  #print_str (breakline)
+   # Print prompt
+  la $a0, prompt_out_filename_data
+  li $v0, 4
+  syscall
+  
+  # Read user input into buffer
+  la $a0, buffer_data_out
+  li $v0, 8
+  li $a1, 128
+  syscall
+  replace_newline_with_null (buffer_data_out)
+   # Print prompt
+  la $a0, prompt_out_filename_text
+  li $v0, 4
+  syscall
+  
+  # Read user input into buffer
+  la $a0, buffer_text_out
+  li $v0, 8
+  li $a1, 128
+  syscall
+  replace_newline_with_null (buffer_text_out)
+################## CLI ########################
+
+
+# abrir arquivo de sa√≠da
+la $a0 buffer_text_out
 jal openFile.func.write
 move $s2 $v0 # file descriptor do arquivo de saida
 
-la $a0 arquivo
+la $a0 buffer_in
 jal Parser
 
 la $a0 ArrayListTextoEntrada
@@ -115,7 +184,7 @@ result:
 .text
 
 # end
-# Se for igual $v0 obtÈm 1, se n„o 0
+# Se for igual $v0 obt√©m 1, se n√£o 0
 .macro compareStringsReg %str1 %str2 
  addi $sp, $sp, -20
  sw $ra, 20($sp)
@@ -176,7 +245,7 @@ exit:
  	
 .end_macro
 
-# Se for igual $v0 obtÈm 1, se n„o 0
+# Se for igual $v0 obt√©m 1, se n√£o 0
 .macro fastCompareStringsReg %str1 %str2
 add $sp $sp -4
 sw %str1 ($sp)
@@ -312,7 +381,7 @@ exit:
 .end_macro
 
 
-.macro concatenateString(%str1, %str2, %result) #result È um espaÁo
+.macro concatenateString(%str1, %str2, %result) #result √© um espa√ßo
 .text
 # Copy first string to result buffer
 
@@ -406,16 +475,16 @@ finish:
 ################################################################
 # macroStack.asm
 
-# Macros para facilitar a criaÁ„o e o fim de escopos alocando e desalocando espaÁo na Stack
+# Macros para facilitar a cria√ß√£o e o fim de escopos alocando e desalocando espa√ßo na Stack
 # 
 # baseado em https://lisha.ufsc.br/teaching/sys/stack.pdf
 #
 #
 
 # macro newSimpleStack
-# coloca na stack informaÁıes para a criaÁ„o de um novo escopo
-# atribui o minimo de espaÁos possiveis
-# usado no comeÁo de funÁıes
+# coloca na stack informa√ß√µes para a cria√ß√£o de um novo escopo
+# atribui o minimo de espa√ßos possiveis
+# usado no come√ßo de fun√ß√µes
 .macro newSimpleStack
 add $sp $sp -12
 sw $a0 8($sp)  #8($fp) - $a0
@@ -424,14 +493,14 @@ sw $fp 0($sp)  #0($fp) - antigo $fp
 move $fp $sp
                #-4($fp)
                #-8($fp)
-               #etc - vari·veis locais
+               #etc - vari√°veis locais
 .end_macro
 
 # macro clearSimpleStack
 # reatribui os valores antigos de $ra, $fp e $a0
-# limpa o espaÁo no Stack criado por newSimpleStack 
-# os espaÁos criados depois s„o limpados automaticamente
-# usado no fim de funÁıes que chamaram newSimpleStack
+# limpa o espa√ßo no Stack criado por newSimpleStack 
+# os espa√ßos criados depois s√£o limpados automaticamente
+# usado no fim de fun√ß√µes que chamaram newSimpleStack
 .macro clearSimpleStack
 move $sp $fp
 lw $a0 8($sp)
@@ -445,12 +514,12 @@ add $sp $sp 12
 #######################################################################
 
 # macro newArgsStack
-# coloca na stack informaÁıes para a criaÁ„o de um novo escopo
+# coloca na stack informa√ß√µes para a cria√ß√£o de um novo escopo
 # contempla todo o leque de regitradores $a
-# usado no comeÁo de funÁıes
+# usado no come√ßo de fun√ß√µes
 .macro newArgsStack
 add $sp $sp -12
-# aqui o scopo j· È iniciado parcilmente por newSimpleStack
+# aqui o scopo j√° √© iniciado parcilmente por newSimpleStack
 sw $a3 8($sp)  #20($fp) - $a3
 sw $a2 4($sp)  #16($fp) - $a2
 sw $a1 0($sp)  #12($fp) - $a1
@@ -460,14 +529,14 @@ newSimpleStack #8($fp)  - $a0
 
                #-4($fp)
                #-8($fp)
-               #etc     - vari·veis locais
+               #etc     - vari√°veis locais
 .end_macro
 
 # macro clearArgsStack
 # reatribui os valores antigos de $ra, $fp e registradores $a
-# limpa o espaÁo no Stack criado por newArgsStack 
-# os espaÁos criados depois s„o limpados automaticamente
-# usado no fim de funÁıes que chamaram newArgsStack
+# limpa o espa√ßo no Stack criado por newArgsStack 
+# os espa√ßos criados depois s√£o limpados automaticamente
+# usado no fim de fun√ß√µes que chamaram newArgsStack
 .macro clearArgsStack
 clearSimpleStack
 lw $a3 8($sp) # recupera os valores dos registradores $a
@@ -481,14 +550,14 @@ add $sp $sp 12
 #######################################################################
 
 # macro newCompleteStack
-# salva automaticamente todas as informÁıes de estado de uma funÁ„o
+# salva automaticamente todas as inform√ß√µes de estado de uma fun√ß√£o
 # incluindo os registradores $s0-$s7, permitindo que eles sejam
-# utilizados pela funÁ„o que pede essa Stack
-# Nota - comparado com SimpleStack, CompleteStack usa 2,3 mais instruÁıes
+# utilizados pela fun√ß√£o que pede essa Stack
+# Nota - comparado com SimpleStack, CompleteStack usa 2,3 mais instru√ß√µes
 .macro newCompleteStack
 
 add $sp $sp -32
-# aqui o scopo j· È iniciado parcilmente por newArgsStack
+# aqui o scopo j√° √© iniciado parcilmente por newArgsStack
 sw $s7 28($sp) #52($fp) - $s7 antigo
 sw $s6 24($sp) #48($fp) - $s6
 sw $s5 20($sp) #44($fp) - $s5
@@ -506,14 +575,14 @@ newArgsStack   #20($fp) - $a3
               
                #-4($fp)
                #-8($fp)
-               #etc     - vari·veis locais
+               #etc     - vari√°veis locais
 .end_macro
 
 # macro clearCompleteStack
 # reatribui os valores antigos de $ra, $fp, $a, e $s
-# limpa o espaÁo no Stack criado por newCompleteStack 
-# os espaÁos criados depois s„o limpados automaticamente
-# usado no fim de funÁıes que chamaram newComleteStack
+# limpa o espa√ßo no Stack criado por newCompleteStack 
+# os espa√ßos criados depois s√£o limpados automaticamente
+# usado no fim de fun√ß√µes que chamaram newComleteStack
 .macro clearCompleteStack
 clearArgsStack
 lw $s7 28($sp) # recupera os valores antigos dos registradores $s
@@ -531,13 +600,13 @@ add $sp $sp 32
 #######################################################################
 
 # macro newBiggerStack
-# salva automaticamente todas as informÁıes de estado de uma funÁ„o,
-# atÈ os registradores tempor·rios
+# salva automaticamente todas as inform√ß√µes de estado de uma fun√ß√£o,
+# at√© os registradores tempor√°rios
 # incluindo os registradores $t0-$t9, permitindo que eles sejam
-# utilizados pela funÁ„o que pede essa Stack
+# utilizados pela fun√ß√£o que pede essa Stack
 .macro newBiggerStack
 add $sp $sp -40
-# aqui o scopo j· È iniciado parcilmente por newArgsStack
+# aqui o scopo j√° √© iniciado parcilmente por newArgsStack
 sw $t9 36($sp)   #92($fp) - $t9 antigo
 sw $t8 32($sp)   #88($fp) - $t8
 sw $t7 28($sp)   #84($fp) - $t7
@@ -565,14 +634,14 @@ newCompleteStack #52($fp) - $s7
              
                  #-4($fp)
                  #-8($fp)
-                 #etc     - vari·veis locais
+                 #etc     - vari√°veis locais
 .end_macro
 
 # macro clearBiggerStack
 # reatribui os valores antigos de $ra, $fp, $a, $s e $t
-# limpa o espaÁo no Stack criado por newBiggerStack 
-# os espaÁos criados depois s„o limpados automaticamente
-# usado no fim de funÁıes que chamaram newBiggerStack
+# limpa o espa√ßo no Stack criado por newBiggerStack 
+# os espa√ßos criados depois s√£o limpados automaticamente
+# usado no fim de fun√ß√µes que chamaram newBiggerStack
 .macro clearBiggerStack
 clearArgsStack
 lw $t9 36($sp) # recupera os valores antigos dos registradores $t
@@ -594,29 +663,29 @@ add $sp $sp 32
 
 
 #########################################################################################
-# ArrayList È uma lista de 3 informaÁıes:
-# Em 0(*) contÈm um ponteiro para o array em si
-# Em 4(*) contÈm a capacidade desse array
-# Em 8(*) contÈm o tamanho atual do array
+# ArrayList √© uma lista de 3 informa√ß√µes:
+# Em 0(*) cont√©m um ponteiro para o array em si
+# Em 4(*) cont√©m a capacidade desse array
+# Em 8(*) cont√©m o tamanho atual do array
 #
 # Para ler o ArrayList primeiro obtenha o ponteiro para o array em 0(*)
 # Depois leia normalmente como qualquer outro array;
 #
-# Para adicionar uma caractere ao array, chame ArrayList.AppendByte com o endereÁo
-# do ArrayList (n„o do array) e informe o byte que deseja inserir ao final da lista;
-# ArrayList.AppendByte ir· expandir automaticamente o array caso ele n„o tenha espaÁo
-# Essa operaÁ„o pode mudar o valor de 0(*), lembre de obter ele de novo sempre que
-# quiser ler o array apÛs uma operaÁ„o de ArrayList.AppendByte
+# Para adicionar uma caractere ao array, chame ArrayList.AppendByte com o endere√ßo
+# do ArrayList (n√£o do array) e informe o byte que deseja inserir ao final da lista;
+# ArrayList.AppendByte ir√° expandir automaticamente o array caso ele n√£o tenha espa√ßo
+# Essa opera√ß√£o pode mudar o valor de 0(*), lembre de obter ele de novo sempre que
+# quiser ler o array ap√≥s uma opera√ß√£o de ArrayList.AppendByte
 #
 # Para editar um byte, primeiro obtenha o ponteiro para o array em 0(*)
 # Depois edite normalmente
-# Cuidado: editar um byte fora do tamanho do array n„o È recomendado
-# Caso o byte que deseja editar esteja alÈm da capacidade, uma exess„o ser· lanÁada
-# Caso o byte esteja entre o tamanho e a capacidade, a ArrayList n„o vai ter
-# a informaÁ„o que esse byte deve ser mantido, ent„o, quando ArrayList.AppendByte
+# Cuidado: editar um byte fora do tamanho do array n√£o √© recomendado
+# Caso o byte que deseja editar esteja al√©m da capacidade, uma exess√£o ser√° lan√ßada
+# Caso o byte esteja entre o tamanho e a capacidade, a ArrayList n√£o vai ter
+# a informa√ß√£o que esse byte deve ser mantido, ent√£o, quando ArrayList.AppendByte
 # for chamado, esse byte pode ser sobreescrito
 #
-# Todas as funÁıes de ArrayList n„o alteram o estado da funÁ„o
+# Todas as fun√ß√µes de ArrayList n√£o alteram o estado da fun√ß√£o
 # que chamou alguma delas
 
 
@@ -629,9 +698,9 @@ ArrayList.Create %regRetorno 16
 # Cria uma ArrayList com um tamanho definido em %capacidade
 # %regRetorno vai ser o registrador que obtem o ArrayList
 .macro ArrayList.Create %regRetorno %capacidade
-add $sp $sp -16 # salva os registradores para n„o alterar o estado
+add $sp $sp -16 # salva os registradores para n√£o alterar o estado
 sw $t0 8($sp)
-sw $v0 4($sp)  # das funÁıes que chamarem essa
+sw $v0 4($sp)  # das fun√ß√µes que chamarem essa
 sw $a0 0($sp)
 
 li $v0 9 #alocar bytes
@@ -640,14 +709,14 @@ syscall
 move $t0 $v0 # ponteiro para ArrayList
 add $a0 $zero %capacidade #aloca 4 byte a mais para garantir que o array termine em uma
 add $a0 $a0 4             #word nula
-li $v0 9                  # nota: talvez um caracter j· seja bom o suficiente, mas vai saber
+li $v0 9                  # nota: talvez um caracter j√° seja bom o suficiente, mas vai saber
 syscall
-sw $v0   0($t0)   # 0(%regRetorno) endereÁo do array em si
+sw $v0   0($t0)   # 0(%regRetorno) endere√ßo do array em si
 sw $a0   4($t0)   # 4(%regRetorno) capacidade do array
 sw $zero 8($t0) # 8(%regRetorno) tamanho do array
 
 sw $t0 12($sp) # gambiarra para permitir que $t0, $v0 e $a0
-# sejam usados para receber o endereÁo de retorno
+# sejam usados para receber o endere√ßo de retorno
 
 lw $t0 8($sp) # restaura o valor antigo dos registradores
 lw $v0 4($sp)
@@ -675,7 +744,7 @@ sw $t4 4($sp)
 sw $t5 0($sp)
 ########
 move $t0 %ArrayList
-lw $t1 0($t0) # endereÁo do array
+lw $t1 0($t0) # endere√ßo do array
 lw $t2 4($t0) # capacidade do array
 lw $t3 8($t0) # tamanho do array
 
@@ -695,7 +764,7 @@ move $t4 $v0
 sw $t4 0($t0)
 sw $t2 4($t0)
 
-move $t5 $zero # $t5 È um indice
+move $t5 $zero # $t5 √© um indice
 loop: 
 lb $t2 ($t1) # copia todos os bytes da lista antiga
 sb $t2 ($t4) # para a lista nova
@@ -746,10 +815,10 @@ clearCompleteStack
 .end_macro
 
 ##################################################
-# Deleta o byte na posiÁ„o %Index e junta a lista
+# Deleta o byte na posi√ß√£o %Index e junta a lista
 .macro ArrayList.DeleteAt %ArrayList %Index
 .data
-mensagemErroIndex: .asciiz "ArrayList: index especificado n„o faz parte do array"
+mensagemErroIndex: .asciiz "ArrayList: index especificado n√£o faz parte do array"
 .align 2
 .text
 newCompleteStack # ArrayList.DeleteAt %ArrayList %Index
@@ -768,9 +837,9 @@ add $s2 $s2 1
 add $s3 $s1 1 # indice
 lw $s6 ($s0) # array
 loop:
-add $s5 $s6 $s3 # $s5 endereÁo do byte sendo lido
+add $s5 $s6 $s3 # $s5 endere√ßo do byte sendo lido
 lb $s4 ($s5) # byte a ser escrito
-add $s5 $s5 -1 # endereÁo para salvar
+add $s5 $s5 -1 # endere√ßo para salvar
 sb $s4 ($s5)
 add $s3 $s3 1
 blt $s3 $s2 loop
@@ -791,10 +860,10 @@ clearCompleteStack
 .end_macro
 
 ##################################################
-# Deleta o byte na posiÁ„o %Index e junta a lista
+# Deleta o byte na posi√ß√£o %Index e junta a lista
 .macro ArrayList.FastDeleteAt %ArrayList %Index
 .data
-mensagemErroIndex: .asciiz "ArrayList: index especificado n„o faz parte do array"
+mensagemErroIndex: .asciiz "ArrayList: index especificado n√£o faz parte do array"
 .align 2
 .text
 # ArrayList.DeleteAt %ArrayList %Index
@@ -813,9 +882,9 @@ add $t2 $t2 1
 add $t3 $t1 1 # indice
 lw $t6 ($t0) # array
 loop:
-add $t5 $t6 $t3 # $s5 endereÁo do byte sendo lido
+add $t5 $t6 $t3 # $s5 endere√ßo do byte sendo lido
 lb $t4 ($t5) # byte a ser escrito
-add $t5 $t5 -1 # endereÁo para salvar
+add $t5 $t5 -1 # endere√ßo para salvar
 sb $t4 ($t5)
 add $t3 $t3 1
 blt $t3 $t2 loop
@@ -835,7 +904,7 @@ sw $t2 8($t0)
 .end_macro
 
 ##################################################
-# Deleta o byte na posiÁ„o %Index e junta a lista
+# Deleta o byte na posi√ß√£o %Index e junta a lista
 .macro ArrayList.DeleteRange %ArrayList %Start %Number
 newArgsStack
 add $sp $sp -4
@@ -886,7 +955,7 @@ lw $a2 8($a0) # tamanho do array
 add $a2 $a2 -1 # reduzindo em um o tamanho do array
 sb $a2 8($a0)
 
-add $a3 $a1 $a2 # posiÁ„o da caractere a ser deletada
+add $a3 $a1 $a2 # posi√ß√£o da caractere a ser deletada
 li $a0 0
 sb $a0 ($a3)
 
@@ -899,7 +968,7 @@ clearArgsStack
 
 #############################################
 # Usado em listas de string*
-# $v0 recebe o index da string, negativo se n„o tiver presente
+# $v0 recebe o index da string, negativo se n√£o tiver presente
 .macro ArrayList.FindString %ArrayList %String
 .data
 .align 2
@@ -935,9 +1004,9 @@ clearCompleteStack
 
 ##################################################
 # Adiciona um %Byte ao final do array em ArrayList
-# cerca de 1.8x vezes mais rapido quando n„o h· expans„o
-# +4x mais rapido quando h· expans„o
-# n„o salva os registradores $t, $a nem $v
+# cerca de 1.8x vezes mais rapido quando n√£o h√° expans√£o
+# +4x mais rapido quando h√° expans√£o
+# n√£o salva os registradores $t, $a nem $v
 .macro ArrayList.FastAppendByte %ArrayList %Byte
 add $sp $sp -4
 sw %ArrayList ($sp)
@@ -945,7 +1014,7 @@ add $t6 $zero %Byte # dessa forma Byte pode ser tanto imediato quanto registrado
 lw $t0 ($sp)
 
 ########
-lw $t1 0($t0) # endereÁo do array
+lw $t1 0($t0) # endere√ßo do array
 lw $t2 4($t0) # capacidade do array
 lw $t3 8($t0) # tamanho do array
 
@@ -962,7 +1031,7 @@ move $t4 $v0
 sw $t4 0($t0)
 sw $t2 4($t0)
 
-move $t5 $zero # $t5 È um indice
+move $t5 $zero # $t5 √© um indice
 loop: 
 lw $t2 ($t1) # copia todos os bytes da lista antiga
 sw $t2 ($t4) # para a lista nova
@@ -993,7 +1062,7 @@ add $t6 $zero %Word # dessa forma Word pode ser tanto imediato quanto registrado
 lw $t0 ($sp)
 
 ########
-lw $t1 0($t0) # endereÁo do array
+lw $t1 0($t0) # endere√ßo do array
 lw $t2 4($t0) # capacidade do array
 lw $t3 8($t0) # tamanho do array
 
@@ -1010,7 +1079,7 @@ move $t4 $v0
 sw $t4 0($t0)
 sw $t2 4($t0)
 
-move $t5 $zero # $t5 È um indice
+move $t5 $zero # $t5 √© um indice
 loop: 
 lw $t2 ($t1) # copia todos os bytes da lista antiga
 sw $t2 ($t4) # para a lista nova
@@ -1397,20 +1466,20 @@ clearCompleteStack
 # asciiConversions.asm
 
 .data
-mensagemDeErro1: "Erro n˙mero inv·lido: "
+mensagemDeErro1: "Erro n√∫mero inv√°lido: "
 
 # .include "macroStack.asm" arquivo que usa desse precisa incluir macroStack.asm
 # .include "stringManipulation.asm" arquivo que usa desse precisa incluir stringManipulation.asm
 
 # aqui nesse arquivo:
-# decimal È "1" : string de 0-9
-# hexa È "f" : string de 0-F
-# numero È 1 : int bin·rio
+# decimal √© "1" : string de 0-9
+# hexa √© "f" : string de 0-F
+# numero √© 1 : int bin√°rio
 
 
-# FunÁıes para checar o tipo de caractere
+# Fun√ß√µes para checar o tipo de caractere
 
-# n„o est· em uso
+# n√£o est√° em uso
 # .macro bid %registrador %label #branch if ASCII decimal
 # blt %registrador 0x30 naoEh
 # bgt %registrador 0x39 naoEh
@@ -1423,7 +1492,7 @@ blt %registrador 0x30 %label
 bgt %registrador 0x39 %label
 .end_macro
 
-# n„o est· em uso
+# n√£o est√° em uso
 # .macro bih %registrador %label #branch if ASCII hexa
 # blt %registrador 0x30 naoEh
 # bgt %registrador 0x39 talvez1
@@ -1451,14 +1520,14 @@ Eh:
 .end_macro
 
 
-# FunÁıes para converter ASCII para numero.
-# n„o checam se È um numero antes de fazer a operaÁ„o
+# Fun√ß√µes para converter ASCII para numero.
+# n√£o checam se √© um numero antes de fazer a opera√ß√£o
 .macro dton %registrador #decimal to number
 and %registrador %registrador 0x0f
 .end_macro
 
 .macro hton %registrador #hexa to number
-bgt %registrador 0x40, letra # branch if %registrador È entre a-f ou A-F
+bgt %registrador 0x40, letra # branch if %registrador √© entre a-f ou A-F
 dton %registrador
 j end
 letra: add %registrador %registrador 9
@@ -1468,14 +1537,14 @@ end:
 
 ##########################################################################################
 
-# Converte a string para um n˙mero
-# %string È um registrador com um endereÁo para uma string
-# Termina a execuÁ„o do programa caso tenha algum erro
-# Mantem o estado da funÁ„o que chamou esse macro salvando todos os registradores
+# Converte a string para um n√∫mero
+# %string √© um registrador com um endere√ßo para uma string
+# Termina a execu√ß√£o do programa caso tenha algum erro
+# Mantem o estado da fun√ß√£o que chamou esse macro salvando todos os registradores
 .macro asciiToNumber %string
 newCompleteStack
 
-la $s0 (%string) # endereÁo da string
+la $s0 (%string) # endere√ßo da string
 li $s1 0 # indice da caractere na string
 li $v0 0 # retorno
 li $s4 0 # positivo
@@ -1507,7 +1576,7 @@ lb $s2 ($s7)
 beq $s2 0x00 fim
 binh $s2 erro
 #executa logica se for
-mul $v0 $v0 16 # poderia ter usado sll, mas n„o seria t„o trivial detectar overflow
+mul $v0 $v0 16 # poderia ter usado sll, mas n√£o seria t√£o trivial detectar overflow
 mfhi $s3 # detectar se o numero seja muito grande
 bgtz $s3, erro
 hton $s2
@@ -1554,9 +1623,9 @@ clearCompleteStack
 
 ##########################################################################################
 
-# Convete o n˙mero no registrador para uma string ascii com o n˙mero hexadecimal correspondente
-# %registrador contem o registrador que possui o n˙mero a ser convertido
-# v0 recebe o endereÁo da string 
+# Convete o n√∫mero no registrador para uma string ascii com o n√∫mero hexadecimal correspondente
+# %registrador contem o registrador que possui o n√∫mero a ser convertido
+# v0 recebe o endere√ßo da string 
 .macro numberToAscii %registrador
 .data
 saida: .space 9
@@ -1587,7 +1656,7 @@ add $s2 $s2 -9
 j save
 
 fim:
-# v0 tem o endereÁo da stirng
+# v0 tem o endere√ßo da stirng
 clearCompleteStack
 .end_macro
 
@@ -1620,17 +1689,17 @@ syscall
 ####################################################################################################################
 ####################################################################################################################
 ####################################################################################################################
-# funÁıes
+# fun√ß√µes
 
 .align 2
 .text
 ###########################################
-# CÛdigo do parser - coloca todo o texto do arquivo a ser compilado em uma string
-# Salva a localizaÁ„o dos labels nesse arquivo
+# C√≥digo do parser - coloca todo o texto do arquivo a ser compilado em uma string
+# Salva a localiza√ß√£o dos labels nesse arquivo
 # $a0 - nome do arquivo
 Parser:
 .data
-parser.msgErro: .asciiz "Erro - tal palavra n„o È reconhecida:"
+parser.msgErro: .asciiz "Erro - tal palavra n√£o √© reconhecida:"
 .text
 newCompleteStack
 # $a0 tem o nome do arquivo
@@ -1655,10 +1724,10 @@ sw $t2 8($s4)
 jal iniciarLabels
 li $s2 0 #index
 la $s3 AL.opcodes
-li $a1 0x00100000 # endereÁo da instruÁ„o
+li $a1 0x00100000 # endere√ßo da instru√ß√£o
 parser.loop:
 getArrayListInString $s0 $s2
-beqz $v1 parser.fim #somente ser· zero se encontrar caractere nulo
+beqz $v1 parser.fim #somente ser√° zero se encontrar caractere nulo
 move $s5 $v0
 lw $a0 ($v0) # palavra
 
@@ -1696,7 +1765,7 @@ jr $ra
 
 
 #################################################
-# LÛgica dos labels
+# L√≥gica dos labels
 #
 .data
 .align 2
@@ -1713,7 +1782,7 @@ AL.C $s1       # cria array list
 lw $s2 ($s1)   # pega todos os valores da ArrayList
 lw $s3 4($s1)
 lw $s4 8($s1)
-sw $s2 ($s0)   # salva eles na localizaÁ„o de ArrayListDeLabels
+sw $s2 ($s0)   # salva eles na localiza√ß√£o de ArrayListDeLabels
 sw $s3 4($s0)
 sw $s4 8($s0)
 
@@ -1722,7 +1791,7 @@ AL.C $s1       # cria array list
 lw $s2 ($s1)   # pega todos os valores da ArrayList
 lw $s3 4($s1)
 lw $s4 8($s1)
-sw $s2 ($s0)   # salva eles na localizaÁ„o de ArrayListDeLabels
+sw $s2 ($s0)   # salva eles na localiza√ß√£o de ArrayListDeLabels
 sw $s3 4($s0)
 sw $s4 8($s0)
 
@@ -1730,8 +1799,8 @@ clearCompleteStack
 jr $ra
 
 
-# $a0 È uma string*
-# $v0 recebe se È ou n„o
+# $a0 √© uma string*
+# $v0 recebe se √© ou n√£o
 identificaLabel:
 li $t0 0 # index
 li $v0 0
@@ -1756,8 +1825,8 @@ identificaLabel.nao:
 jr $ra
 
 
-# $a0 È uma string*
-# $a1 È o endereÁo
+# $a0 √© uma string*
+# $a1 √© o endere√ßo
 adicionarLabel:
 newArgsStack
 la $a2 ArrayListDeLabels.Nomes
@@ -2018,7 +2087,7 @@ fim:
 
 .text 
 
-# $a0 contem a string da instruÁ„o
+# $a0 contem a string da instru√ß√£o
 # $a1 contem o index dessa string no array
 # $a2 contem o file descriptor do arquivo de saida .text
 Roteador:
@@ -2030,15 +2099,15 @@ EOL
 print_str
 SPACE
 
-li $s0 0 #instruÁ„o
+li $s0 0 #instru√ß√£o
 
 lw $t0 lenghtTabela
-sll $t0 $t0 2 # multiplica por 4, ser· util no meio do codigo
+sll $t0 $t0 2 # multiplica por 4, ser√° util no meio do codigo
 
 la $t2 tabelaOpcode
 li $s3 0 # indice da coluna, anda de 4 em 4
 
-# o objetivo aqui È descobrir em qual coluna da tabela a string em $a0 est·
+# o objetivo aqui √© descobrir em qual coluna da tabela a string em $a0 est√°
 # for string in tabelaOpcode do
 Roteador.Coluna:
 add $t5 $s3 $t2
@@ -2087,7 +2156,7 @@ beqal $a1 0x06 Roteador.Sa
 # a partir desse ponto $v0 possui o valor a adicionar
 
 Roteador.Escrever:
-# descobrir posiÁ„o do valor de $v0
+# descobrir posi√ß√£o do valor de $v0
 la $t7 quantidadeDeShamtTable
 add $t6 $s4 $t7 
 lw $t6 ($t6)
@@ -2095,7 +2164,7 @@ add $t6 $t6 $s3
 lb $t6 ($t6) # $t6 possui o shift 
 
 sllv $v0 $v0 $t6
-add $s0 $s0 $v0 # valor adicionado na instruÁ„o
+add $s0 $s0 $v0 # valor adicionado na instru√ß√£o
 
 Roteador.Ignora:
 add $s4 $s4 4
@@ -2270,7 +2339,7 @@ r$ra:   .asciiz "$ra\0\0\0"
 registradores: .word r$0 r$1 r$2 r$3 r$4 r$5 r$6 r$7 r$8 r$9 r$10 r$11 r$12 r$13 r$14 r$15 r$16 r$17 r$18 r$19 r$20 r$21 r$22 r$23 r$24 r$25 r$26 r$27 r$28 r$29 r$30 r$31 r$zero r$at r$v0 r$v1 r$a0 r$a1 r$a2 r$a3 r$t0 r$t1 r$t2 r$t3 r$t4 r$t5 r$t6 r$t7 r$s0 r$s1 r$s2 r$s3 r$s4 r$s5 r$s6 r$s7 r$t8 r$t9 r$k0 r$k1 r$gp r$sp r$s8 r$ra 
 
 arrayListRegistradores: .word registradores 256 256
-msgDeErroRegistrador: .asciiz "Registrador n„o reconhecido: "
+msgDeErroRegistrador: .asciiz "Registrador n√£o reconhecido: "
 .text
 add $sp $sp -4
 sw $a0 ($sp)
