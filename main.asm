@@ -90,7 +90,7 @@ la $a0 buffer_text_out
 # abrir arquivo de saída
 la $a0 arquivoSaida
 jal openFile.func.write
-move $s2 $v0 # file descriptor do arquivo de saida
+move $s2 $v0 # file descriptor do arquivo text de saida
 
 la $a0 arquivo
 jal Parser
@@ -118,6 +118,14 @@ j loop
 
 
 fim:
+
+.data 
+text.End: .asciiz "\nEND;\n"
+.text
+move $a0 $s2
+la $a1 text.End
+jal writeToFile.Func
+
 li $v0 10
 syscall
 
@@ -264,7 +272,7 @@ loop:
   lw $t4, 0($t2)
   
   # Check if characters are equal
-  sub $t0, $t3, $t4
+  subu $t0, $t3, $t4
   
 
   # Check for end of strings (newline character)
@@ -1426,6 +1434,60 @@ finish:
   	addi $sp, $sp, 12
 .end_macro
 
+writeToFile.Func:
+.data
+  writeToFile.Func.error_message: .asciiz "Error writing to file."
+.text
+  # Get string length (excluding null terminator)
+  addi $sp, $sp, -12
+  sw $t2, 8($sp)
+  sw $t1, 4($sp)
+  sw $t0, 0($sp)
+  
+  move $t2 $a1
+  li $t0, 0  # counter for string length
+writeToFile.Func.loop:
+    lb $t1, 0($t2)  # load byte from string address
+    beqz $t1, writeToFile.Func.done_strlen  # branch if null terminator found
+    addi $t2, $t2, 1  # move to next character
+    addi $t0, $t0, 1  # increment counter
+    j writeToFile.Func.loop
+  writeToFile.Func.done_strlen:
+
+  # Write the string to the file
+  li $v0, 15    # syscall code for write
+  move $a2, $t0  # string length (excluding null terminator)
+  syscall
+
+  # Check if write was successful
+  
+  bne $v0, -1, writeToFile.Func.finish
+writeToFile.Func.write_error:
+  # Handle error (e.g., print message)
+  li $v0, 4    # syscall code for print string
+  la $a0, writeToFile.Func.error_message  # load error message address
+  syscall
+  li $v0, 10
+  syscall
+
+writeToFile.Func.finish:
+  	sw $t2, 8($sp)
+  	lw $t1, 4($sp)
+  	lw $t0, 0($sp)
+  	addi $sp, $sp, 12
+    jr $ra
+
+
+
+
+
+
+
+
+
+
+
+
 #.include "ArrayList.asm"
 #.include "iostream.asm"
 #.include "readFileBySpace.asm"
@@ -1747,7 +1809,21 @@ parser.naoEhOpcode:
 jal identificaLabel
 beqz $v0 parser.continue
 AL.DL $s5
+
 lw $a0 ($s5)
+la $t3 ArrayListDeLabels.Nomes
+AL.FS $t3 $a0
+bltz $v0 parser.LabelNovo
+
+.data
+ErroParserLabelJaEncontrado: .asciiz "Erro, label já encontrado: "
+.text
+print_str ErroParserLabelJaEncontrado
+print_str
+li $v0 10
+syscall
+
+parser.LabelNovo:
 jal adicionarLabel
 ArrayList.DeleteRange $s4 $s2 $v1
 j parser.loop
@@ -1778,6 +1854,7 @@ jr $ra
 ArrayListDeLabels.Nomes: .word 0x00 0x00 0x00
 ArrayListDeLabels.Enderecos: .word 0x00 0x00 0x00
 
+labelproibido: .asciiz "¿¼½¾?"
 .text
 
 # Inicializa as listas dinamicas de Labels. 
@@ -1800,6 +1877,10 @@ lw $s4 8($s1)
 sw $s2 ($s0)   # salva eles na localização de ArrayListDeLabels
 sw $s3 4($s0)
 sw $s4 8($s0)
+
+la $a0 labelproibido
+move $a1 $zero
+jal adicionarLabel
 
 clearCompleteStack
 jr $ra
@@ -1829,6 +1910,7 @@ bne $t3 0x3a identificaLabel.nao # 3a = ":"
 li $v0 1
 identificaLabel.nao:
 jr $ra
+
 
 
 # $a0 é uma string*
@@ -2198,7 +2280,7 @@ jr $ra
 escreverInstrucao:
 .data
 escrever.Espaco: .asciiz " : "
-escrever.Space: .asciiz "\n"
+escrever.Space: .asciiz ";\n"
 .text
 numberToAscii $a0
 move $t0 $v0
@@ -2453,7 +2535,7 @@ Roteador.OffsetPc:
 la $t0 ArrayListDeLabels.Nomes
 AL.FS $t0 $a0 # v0 tem o index da palavra
 lw $t0 ArrayListDeLabels.Enderecos
-sll $v0 $v0 2
+#sll $v0 $v0 2
 add $t0 $t0 $v0
 lw $v0 ($t0)
 
@@ -2466,11 +2548,20 @@ jr $ra #Roteador.OffsetPc end
 Roteador.Target:
 la $t0 ArrayListDeLabels.Nomes
 AL.FS $t0 $a0 # v0 tem o index da palavra
+bltz $v0 Roteador.Target.Error
 lw $t0 ArrayListDeLabels.Enderecos
-sll $v0 $v0 2
+#sll $v0 $v0 2
 add $t0 $t0 $v0
 lw $v0 ($t0)
 jr $ra #Roteador.Target end
+Roteador.Target.Error:
+.data
+erroSemLabel: .asciiz "Erro, label desconhecido: "
+.text
+print_str erroSemLabel
+print_str
+li $v0 10
+syscall
 
 Roteador.Sa:
 .data
