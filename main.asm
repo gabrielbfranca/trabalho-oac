@@ -11,6 +11,7 @@
 arquivo: .asciiz "example_saida_simples.asm"
 .align 3
 arquivoSaida: .asciiz "teste.asm"
+arquivoSaidaData: .asciiz "testeData.asm"
 my_space: .space 16
 
 prompt_msg: .asciiz "digite o nome do arquivo: "
@@ -87,11 +88,20 @@ t:
 # abrir arquivo de saí­da
 la $a0 arquivoSaida #buffer_text_out
 jal openFile.func.write
-move $s2 $v0 # file descriptor do arquivo text de saida
+move $s2 $v0 # file descriptor do arquivo text de saida text
+
+la $a0 arquivoSaidaData #buffer_data_out
+jal openFile.func.write
+move $s7 $v0 # file descriptor do arquivo text de saida data
 
 move $a0 $s2
 la $a1 text_header
 jal writeToFile.Func
+
+move $a0 $s7
+la $a1 data_header
+jal writeToFile.Func
+
 
 la $a0 arquivo #buffer_in
 jal Parser
@@ -101,17 +111,66 @@ lw $a0 ($a0)
 #jal print
 move $s0 $a0 # texto de entrada
 
+
+
+.data
+.align 2
+dtext: .asciiz ".text\0\0\0"
+.align 2
+ddata: .asciiz ".data\0\0\0"
+.align 2
+dword: .asciiz ".word\0\0\0"
+.align 2
+
+diretivas: .word dtext ddata dword
+
+ArrayListDiretivas: diretivas 12 12 
+
+.text
+
+#s7 -> file descriptor do arquivo de saida .data
+#s6 -> numero de word adicionadas
+#s5 -> palavra lida
+#s4 -> text ou data
+#s3 -> numero de instruções lidas
+#s2 -> file descriptor do arquivo de saida .text
+#s1 -> numero de chars lidas
+#s0 -> texto de entrada
+
+li $s4 0
 li $s1 0 # numero da chars lidas
 loop:
 move $a0 $s0
 move $a1 $s1
 jal getWordInString.Func
-beqz $v1 fim
-add  $s1 $s1 $v1
-move $a3 $s3
+move $s5 $v0 # v0 contem a palavra
+beqz $v1 fim # se lido 0 chars, termina
+add  $s1 $s1 $v1 # adiciona o numero de chars lidas
+
+la $a0 ArrayListDiretivas
+move $a1 $s5
+jal ArrayList.FindString.Func
+bltz $v0 continue
+move $s4 $v0
+j loop
+
+continue:
+
+beqz $s4 text
+# palavra do .data - chamar 
+move $a2 $s7 #file descriptor
+move $a1 $s6 #numero word
+move $a0 $s5 #palavra
+jal adicionarData
+add $s6 $s6 1
+j loop
+
+# palavra do .text - chamar Roteador
+text: 
+move $a3 $s3 
 move $a2 $s2
 move $a1 $s1
-move $a0 $v0
+move $a0 $s5
 jal Roteador
 move $s3 $v0
 move $s1 $v1
@@ -127,8 +186,13 @@ move $a0 $s2
 la $a1 text.End
 jal writeToFile.Func
 
+move $a0 $s7
+la $a1 text.End
+jal writeToFile.Func
+
 li $v0 10
 syscall
+
 
 
 
@@ -1944,8 +2008,8 @@ jr $ra
 ######################################################
 .data
 filepath:    .asciiz "example_saida.asm"
-text:   .asciiz "data.mif"     
-data:   .asciiz "text.mif"
+#text:   .asciiz "data.mif"     
+#data:   .asciiz "text.mif"
 
 palavra1: .space 32
 palavra2: .space 32
@@ -2541,6 +2605,7 @@ syscall
 Roteador.OffsetPc:
 la $t0 ArrayListDeLabels.Nomes
 AL.FS $t0 $a0 # v0 tem o index da palavra
+bltz $v0 Roteador.Target.Error
 lw $t0 ArrayListDeLabels.Enderecos
 #sll $v0 $v0 2
 add $t0 $t0 $v0
@@ -2551,6 +2616,14 @@ add $v0 $v0 -1
 and $v0 0xffff
 
 jr $ra #Roteador.OffsetPc end
+Roteador.OffsetPc.Error:
+.data
+erroSemLabelOffset: .asciiz "Erro, label desconhecido: "
+.text
+print_str erroSemLabelOffset
+print_str
+li $v0 10
+syscall
 
 Roteador.Target:
 la $t0 ArrayListDeLabels.Nomes
@@ -2592,9 +2665,45 @@ li $v0 10
 syscall
 
 
+
+
+adicionarData:
+asciiToNumber $a0
+move $a0 $v0
+numberToAscii $a0
+move $t0 $v0
+numberToAscii $a1
+move $a1 $v0
+move $a0 $a2 # file descriptor
+writeToFile
+
+la $a1 escrever.Espaco
+writeToFile
+
+move $a1 $t0 # string
+writeToFile
+
+la $a1 escrever.Space
+writeToFile
+
+
+jr $ra
+
+
+
+
+
+
+
+
 # $a0 - string
 # $a1 - index
 getWordInString.Func:
 getWordInString $a0 $a1
 jr $ra
 
+# $a0 - arrayList
+# $a1 - string
+ArrayList.FindString.Func:
+ArrayList.FindString $a0 $a1
+jr $ra
