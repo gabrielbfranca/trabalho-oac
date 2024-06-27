@@ -23,7 +23,7 @@ buffer_in: .space 128
 buffer_data_out: .space 128
 buffer_text_out: .space 128
 .text
-j t
+
 ############ CLI ##################
 .macro replace_newline_with_null (%str)
     # $a0 = address of the string
@@ -84,13 +84,13 @@ end_replace:
   replace_newline_with_null (buffer_text_out)
 ################## CLI ########################
 
-t:
+
 # abrir arquivo de saí­da
-la $a0 arquivoSaida #buffer_text_out
+la $a0 buffer_text_out
 jal openFile.func.write
 move $s2 $v0 # file descriptor do arquivo text de saida text
 
-la $a0 arquivoSaidaData #buffer_data_out
+la $a0 buffer_data_out
 jal openFile.func.write
 move $s7 $v0 # file descriptor do arquivo text de saida data
 
@@ -103,7 +103,7 @@ la $a1 data_header
 jal writeToFile.Func
 
 
-la $a0 arquivo #buffer_in
+la $a0 buffer_in
 jal Parser
 
 la $a0 ArrayListTextoEntrada
