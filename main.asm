@@ -85,14 +85,15 @@ end_replace:
 
 t:
 # abrir arquivo de saí­da
-la $a0 buffer_text_out
-
-# abrir arquivo de saída
-la $a0 arquivoSaida
+la $a0 arquivoSaida #buffer_text_out
 jal openFile.func.write
 move $s2 $v0 # file descriptor do arquivo text de saida
 
-la $a0 arquivo
+move $a0 $s2
+la $a1 text_header
+jal writeToFile.Func
+
+la $a0 arquivo #buffer_in
 jal Parser
 
 la $a0 ArrayListTextoEntrada
@@ -1829,7 +1830,13 @@ ArrayList.DeleteRange $s4 $s2 $v1
 j parser.loop
 
 parser.continue:
+lw $a0 ($a0)
+beqz $a0 parser.Remover
 add $s2 $s2 $v1 # caracters lidas
+j parser.loop
+
+parser.Remover:
+ArrayList.DeleteAt $s4 $s2
 j parser.loop
 
 
@@ -2206,7 +2213,7 @@ compareStringsReg $t5 $a0
 beq $v0 1 Roteador.Linha
 
 add $s3 $s3 4 # soma 4 pois estamos caminhando em words
-bgt $s3 $t0 erroOpcodeInexistente
+bge $s3 $t0 erroOpcodeInexistente
 j Roteador.Coluna
 
 
