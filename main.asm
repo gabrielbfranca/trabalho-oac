@@ -22,6 +22,7 @@ buffer_in: .space 128
 buffer_data_out: .space 128
 buffer_text_out: .space 128
 .text
+j t
 ############ CLI ##################
 .macro replace_newline_with_null (%str)
     # $a0 = address of the string
@@ -82,7 +83,7 @@ end_replace:
   replace_newline_with_null (buffer_text_out)
 ################## CLI ########################
 
-
+t:
 # abrir arquivo de saí­da
 la $a0 buffer_text_out
 
@@ -106,10 +107,12 @@ move $a1 $s1
 jal getWordInString.Func
 beqz $v1 fim
 add  $s1 $s1 $v1
+move $a3 $s3
 move $a2 $s2
 move $a1 $s1
 move $a0 $v0
 jal Roteador
+move $s3 $v0
 move $s1 $v1
 j loop
 
@@ -2093,10 +2096,12 @@ fim:
 # $a0 contem a string da instrução
 # $a1 contem o index dessa string no array
 # $a2 contem o file descriptor do arquivo de saida .text
+# $a3 contem o numero de instruções lidas
 Roteador:
 newCompleteStack
 move $s1 $a1
 move $s2 $a2
+move $s5 $a3
 
 EOL
 print_str
@@ -2185,20 +2190,34 @@ syscall # termina o programa
 Roteador.Fim:
 move $a0 $s0
 jal escreverInstrucao
+move $v0 $s5
 move $v1 $s1
 clearCompleteStack
 jr $ra
 
 escreverInstrucao:
+.data
+escrever.Espaco: .asciiz " : "
+escrever.Space: .asciiz "\n"
+.text
 numberToAscii $a0
-move $a1 $v0 # string
+move $t0 $v0
+numberToAscii $s5
+move $a1 $v0
 move $a0 $s2 # file descriptor
 writeToFile
-.data
-space: .asciiz "\n"
-.text
-la $a1 space
+
+la $a1 escrever.Espaco
 writeToFile
+
+
+move $a1 $t0 # string
+writeToFile
+add $s5 $s5 1
+
+la $a1 escrever.Space
+writeToFile
+
 move $a0 $a1 #?
 #print_str
 jr $ra
@@ -2431,7 +2450,17 @@ syscall
 
 
 Roteador.OffsetPc:
-li $v0 0
+la $t0 ArrayListDeLabels.Nomes
+AL.FS $t0 $a0 # v0 tem o index da palavra
+lw $t0 ArrayListDeLabels.Enderecos
+sll $v0 $v0 2
+add $t0 $t0 $v0
+lw $v0 ($t0)
+
+sub $v0 $v0 $s5
+add $v0 $v0 -1
+and $v0 0xffff
+
 jr $ra #Roteador.OffsetPc end
 
 Roteador.Target:
