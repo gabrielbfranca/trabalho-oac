@@ -947,9 +947,56 @@ mensagemErroIndex: .asciiz "ArrayList: index especificado não faz parte do array
 .text
 # ArrayList.DeleteAt %ArrayList %Index
 add $sp $sp -4
-sw %ArrayList -4($fp)
+sw %ArrayList ($sp)
 add $t1 $zero %Index # truque para permitir que %index seja tanto imediato quanto registrador
-lw $t0 -4($fp)
+lw $t0 ($sp)
+#  $s1 - index
+
+lw $t2 8($t0) # tamanho atual do array
+
+bge $t1 $t2 erroIndex
+blt $t1 0 erroIndex
+
+add $t2 $t2 1
+add $t3 $t1 1 # indice
+lw $t6 ($t0) # array
+add $t2 $t2 $t6
+add $t3 $t3 $t6
+loop:
+#add $t5 $t6 $t3 # $s5 endereço do byte sendo lido
+lb $t4 ($t3) # byte a ser escrito
+sb $t4 -1($t3) # endereço para salvar
+add $t3 $t3 1
+blt $t3 $t2 loop
+
+j fim
+
+erroIndex:
+li $v0 4
+la $a0 mensagemErroIndex
+syscall
+li $v0 10
+syscall
+
+fim:
+subu $t2 $t2 $t6
+add $t2 $t2 -2
+sw $t2 8($t0)
+.end_macro
+
+##################################################
+# tentativa falha de deixar isso mais rapido
+# talvez o unico jeito seja usando muito mais memoria
+.macro ArrayList.EvenFasterDeleteAt %ArrayList %Index
+.data
+mensagemErroIndex: .asciiz "ArrayList: index especificado não faz parte do array"
+.align 2
+.text
+# ArrayList.DeleteAt %ArrayList %Index
+add $sp $sp -4
+sw %ArrayList ($sp)
+add $t1 $zero %Index # truque para permitir que %index seja tanto imediato quanto registrador
+lw $t0 ($sp)
 #  $s1 - index
 
 lw $t2 8($t0) # tamanho atual do array
@@ -962,13 +1009,25 @@ add $t3 $t1 1 # indice
 lw $t6 ($t0) # array
 loop:
 add $t5 $t6 $t3 # $s5 endereço do byte sendo lido
-lb $t4 ($t5) # byte a ser escrito
-add $t5 $t5 -1 # endereço para salvar
-sb $t4 ($t5)
+lb $t4 ($t5) # byte a ser escrito 
+sb $t4 -1($t5) # endereço para salvar
 add $t3 $t3 1
-blt $t3 $t2 loop
-
+and $t7 $t3 0x3
+beqz $t7 fastloopStart
+blt $t3 $t2 loop 
 j fim
+
+fastloopStart:
+bge $t3 $t2 fim
+add $t3 $t3 4
+fastloop:
+add $t5 $t6 $t3
+lw $t4 ($t5)
+sw $t4 -4($t5)
+add $t3 $t3 4
+blt $t3 $t2 fastloop
+j fim
+
 
 erroIndex:
 li $v0 4
