@@ -831,7 +831,7 @@ beq $t2 $t3 ExpandArray
 add $t1 $t1 $t3
 lw $t5 24($sp)
 sb $t5 ($t1) # salva o byte
-j fim
+j ArrayList.AppendByte.fim
 ExpandArray:
 sll $t2 $t2 1 # duplicar o tamanho
 move $a0 $t2
@@ -855,7 +855,7 @@ blt $t5 $t3 loop
 lw $t5 24($sp)
 sb $t5 ($t4)
 
-fim:
+ArrayList.AppendByte.fim:
 add $t3 $t3 1
 sw $t3 8($t0)
 
@@ -923,16 +923,15 @@ sb $s4 ($s5)
 add $s3 $s3 1
 blt $s3 $s2 loop
 
-j fim
+j fim2
 
 erroIndex:
 li $v0 4
 la $a0 mensagemErroIndex
 syscall
-li $v0 10
-syscall
+j fim
 
-fim:
+fim2:
 add $s2 $s2 -2
 sw $s2 8($s0)
 clearCompleteStack
@@ -969,16 +968,15 @@ sb $t4 -1($t3) # endereço para salvar
 add $t3 $t3 1
 blt $t3 $t2 loop
 
-j fim
+j fim2
 
 erroIndex:
 li $v0 4
 la $a0 mensagemErroIndex
 syscall
-li $v0 10
-syscall
+j fim
 
-fim:
+fim2:
 subu $t2 $t2 $t6
 add $t2 $t2 -2
 sw $t2 8($t0)
@@ -1015,7 +1013,7 @@ add $t3 $t3 1
 and $t7 $t3 0x3
 beqz $t7 fastloopStart
 blt $t3 $t2 loop 
-j fim
+j fim2
 
 fastloopStart:
 bge $t3 $t2 fim
@@ -1026,17 +1024,16 @@ lw $t4 ($t5)
 sw $t4 -4($t5)
 add $t3 $t3 4
 blt $t3 $t2 fastloop
-j fim
+j fim2
 
 
 erroIndex:
 li $v0 4
 la $a0 mensagemErroIndex
 syscall
-li $v0 10
-syscall
+j fim
 
-fim:
+fim2:
 add $t2 $t2 -2
 sw $t2 8($t0)
 .end_macro
@@ -1157,7 +1154,7 @@ lw $t2 4($t0) # capacidade do array
 lw $t3 8($t0) # tamanho do array
 
 beq $t2 $t3 ExpandArray
-j fim
+j fim2
 ExpandArray:
 sll $t2 $t2 1 # duplicar o capacidade
 move $a0 $t2
@@ -1180,7 +1177,7 @@ blt $t5 $t3 loop
 
 lw $t1 0($t0)
 
-fim:
+fim2:
 add $t1 $t1 $t3
 sb $t6 ($t1) # salva o byte
 
@@ -1205,7 +1202,7 @@ lw $t2 4($t0) # capacidade do array
 lw $t3 8($t0) # tamanho do array
 
 beq $t2 $t3 ExpandArray
-j fim
+j fim2
 ExpandArray:
 sll $t2 $t2 1 # duplicar o capacidade
 move $a0 $t2
@@ -1228,7 +1225,7 @@ blt $t5 $t3 loop
 
 lw $t1 0($t0)
 
-fim:
+fim2:
 add $t1 $t1 $t3
 sw $t6 ($t1) # salva a word
 
@@ -1385,10 +1382,12 @@ AL.C $s1 8
 loop:
 add $s2 $s3 $s0
 lb $s2 ($s2)
+beq $s2 0x2C pular
 beq $s2 0x20 fim
 beq $s2 0x0a fim
 beq $s2 0x00 fim2
 ArrayList.FastAppendByte $s1 $s2
+pular:
 add $s3 $s3 1
 j loop
 
@@ -1758,14 +1757,14 @@ bne $s2 0x30 decimal
 add $s1 $s1 1
 add $s7 $s0 $s1
 lb $s2 ($s7)
-beq $s2 0x00 fim
+beq $s2 0x00 aciiToNumbem.fim
 bne $s2 0x78 decimal # se formos colocar suporte para octal, seria aqui
 
 add $s1 $s1 1
 hexa:
 add $s7 $s0 $s1
 lb $s2 ($s7)
-beq $s2 0x00 fim
+beq $s2 0x00 aciiToNumbem.fim
 binh $s2 erro
 #executa logica se for
 mul $v0 $v0 16 # poderia ter usado sll, mas não seria tão trivial detectar overflow
@@ -1781,7 +1780,7 @@ j hexa
 decimal:
 add $s7 $s0 $s1
 lb $s2 ($s7)
-beq $s2 0x00 fim
+beq $s2 0x00 aciiToNumbem.fim
 bind $s2 erro
 #executa logica se for
 mul $v0 $v0 10
@@ -1801,11 +1800,9 @@ la $a0 mensagemDeErro1
 syscall
 la $a0 ($s0) # string
 syscall
+j fim
 
-li $v0 10 # exit
-syscall
-
-fim: 
+aciiToNumbem.fim: 
 bne $s4 0x80000000 continue 
 bgtu $v0 $s4 erro
 subu $v0 $zero $v0
@@ -1840,14 +1837,14 @@ sb $s3 ($s4)
 add $s1 $s1 -1
 srl $s0 $s0 4
 bge $s1 0 loop
-j fim
+j fim2
 
 letras:
 li $s3 0x0060
 add $s2 $s2 -9
 j save
 
-fim:
+fim2:
 # v0 tem o endereço da stirng
 clearCompleteStack
 .end_macro
@@ -1944,8 +1941,7 @@ ErroParserLabelJaEncontrado: .asciiz "Erro, label já encontrado: "
 .text
 print_str ErroParserLabelJaEncontrado
 print_str
-li $v0 10
-syscall
+j fim
 
 parser.LabelNovo:
 jal adicionarLabel
@@ -1968,8 +1964,7 @@ print_str parser.msgErro
 print_str
 EOL
 
-li $v0 10
-syscall
+j fim
 
 parser.fim:
 clearCompleteStack
@@ -2220,8 +2215,8 @@ msgErroOpcodeInexistente: .asciiz "Erro Opcode Inexistente - "
                  # add  addi addiu addu and  andi beq  bgez bgezal bltzal bne  clo  clz  div  j    jal  jalr jr   lb   lhu  lui  lw   mfhi mflo movn mul  mult nor  or   ori  sb   sll  sllv slt  slti sltu sra  srav srl  sub  subu sw   xor  xori
 tabela26.31: .byte 0x40 0x48 0x49  0x40 0x40 0x4c 0x44 0x41 0x41   0x41   0x45 0x5c 0x5c 0x40 0x42 0x43 0x40 0x40 0x60 0x65 0x4f 0x63 0x40 0x40 0x40 0x5c 0x40 0x40 0x40 0x4d 0x68 0x40 0x40 0x40 0x4a 0x40 0x40 0x40 0x40 0x40 0x40 0x6b 0x40 0x4e
 tabela21.25: .byte 0x01 0x01 0x01  0x01 0x01 0x01 0x01 0x01 0x01   0x01   0x01 0x01 0x01 0x01 0x05 0x05 0x01 0x01 0x01 0x01 0x01 0x01 0x40 0x40 0x01 0x01 0x01 0x01 0x01 0x01 0x01 0x40 0x01 0x01 0x01 0x01 0x40 0x01 0x40 0x01 0x01 0x01 0x01 0x01 
-tabela16.20: .byte 0x01 0x01 0x01  0x01 0x01 0x01 0x01 0x41 0x51   0x50   0x01 0x40 0x40 0x01 0x00 0x00 0x40 0x40 0x03 0x03 0x40 0x03 0x40 0x40 0x01 0x01 0x01 0x01 0x01 0x01 0x01 0x01 0x01 0x01 0x01 0x01 0x01 0x01 0x01 0x01 0x01 0x01 0x01 0x01 
-tabela11.15: .byte 0x07 0x02 0x02  0x01 0x01 0x02 0x04 0x04 0x04   0x04   0x04 0x01 0x01 0x40 0x00 0x00 0x40 0x40 0x00 0x00 0x02 0x00 0x01 0x01 0x01 0x01 0x40 0x01 0x01 0x02 0x03 0x01 0x01 0x01 0x02 0x01 0x01 0x01 0x01 0x01 0x01 0x03 0x01 0x02 
+tabela16.20: .byte 0x01 0x01 0x01  0x01 0x01 0x01 0x01 0x41 0x51   0x50   0x01 0x40 0x40 0x01 0x00 0x00 0x40 0x40 0x03 0x03 0x40 0x03 0x40 0x40 0x01 0x01 0x01 0x01 0x01 0x01 0x01 0x01 0x01 0x01 0x01 0x01 0x01 0x01 0x01 0x01 0x01 0x03 0x01 0x01 
+tabela11.15: .byte 0x07 0x02 0x02  0x01 0x01 0x02 0x04 0x04 0x04   0x04   0x04 0x01 0x01 0x40 0x00 0x00 0x40 0x40 0x00 0x00 0x02 0x00 0x01 0x01 0x01 0x01 0x40 0x01 0x01 0x02 0x03 0x01 0x01 0x01 0x02 0x01 0x01 0x01 0x01 0x01 0x01 0x00 0x01 0x02 
 tabela6.10:  .byte 0x00 0x00 0x00  0x40 0x40 0x00 0x00 0x00 0x00   0x00   0x00 0x40 0x40 0x40 0x00 0x00 0x40 0x40 0x00 0x00 0x00 0x00 0x40 0x40 0x40 0x40 0x40 0x40 0x40 0x00 0x00 0x06 0x40 0x40 0x00 0x40 0x06 0x04 0x06 0x40 0x40 0x00 0x40 0x00 
 tabela0.5:   .byte 0x00 0x00 0x00  0x61 0x64 0x00 0x00 0x00 0x00   0x00   0x00 0x61 0x60 0x5a 0x00 0x00 0x49 0x48 0x00 0x00 0x00 0x00 0x50 0x52 0x4b 0x42 0x58 0x67 0x65 0x00 0x00 0x40 0x44 0x6a 0x00 0x6b 0x43 0x47 0x42 0x62 0x63 0x00 0x66 0x00 # literal
 
@@ -2254,9 +2249,9 @@ tabelaValores: .word tabela26.31 tabela21.25 tabela16.20 tabela11.15 tabela6.10 
 
                       #   add  addi addiu addu and  andi beq  bgez bgezal bltzal bne  clo  clz  div  j    jal  jalr jr   lb   lhu  lui  lw   mfhi mflo movn mul  mult nor  or   ori  sb   sll  sllv slt  slti sltu sra  srav srl  sub  subu sw   xor  xori
 quantidadeDeShamt1: .byte 26   26   26    26   26   26   26   26   26     26     26   26   26   26   26   26   26   26   26   26   26   26   26   26   26   26   26   26   26   26   26   26   26   26   26   26   26   26   26   26   26   26   26   26   # geralmente sempre 26-31
-quantidadeDeShamt2: .byte rd   rt   rt    rd   rd   rt   rs   rs   21     21     21   11   21   21    0    0   21   21   16   16   16   16   21   21   21   21   21   21   21   21   21   21   21   21   21   21   21   21   21   21   21   21   21   21   # 21-25
-quantidadeDeShamt3: .byte rs   rs   rs    rs   rs   rs   rt   rt    0      0     16   21   21   16   16   16   16   11    0    0   11    0   16   16   11   11   11   11   11   11   11   11   11   11   11   11   11   11   11   11   11   11   11   11   11   # 16-20
-quantidadeDeShamt4: .byte  0    0    0    rt   rt   imm  off  off  11     11      0   11   11   11   11   11   11   16   11   11    0   11   11   11   16   16   16   16   16   16   16   16   16   16   16   16   16   16   16   16   16   16   16   16   # 11-15
+quantidadeDeShamt2: .byte rd   rt   rt    rd   rd   rt   rs   rs   21     21     21   11   21   21    0    0   21   21   16   16   16   16   21   21   21   21   21   21   21   21   21   21   21   21   21   21   21   21   21   21   21   16   21   21   # 21-25
+quantidadeDeShamt3: .byte rs   rs   rs    rs   rs   rs   rt   rt    0      0     16   21   21   16   16   16   16   11    0    0   11    0   16   16   11   11   11   11   11   11   11   11   11   11   11   11   11   11   11   11   11    0   11   11   11   # 16-20
+quantidadeDeShamt4: .byte  0    0    0    rt   rt   imm  off  off  11     11      0   11   11   11   11   11   11   16   11   11    0   11   11   11   16   16   16   16   16   16   16   16   16   16   16   16   16   16   16   16   16   11   16   16   # 11-15
 quantidadeDeShamt5: .byte  6    6    6     6    6    6    6    6    6      6      6    6    6    6    6    6    6    6    6    6    6    6    6    6    6    6    6    6    6    6    6    6    6    6    6    6    6    6    6    6    6    6    6    6   # 6-10
 quantidadeDeShamt6: .byte  0    0    0     0    0    0    0    0    0      0      0    0    0    0    0    0    0    0    0    0    0    0    0    0    0    0    0    0    0    0    0    0    0    0    0    0    0    0    0    0    0    0    0    0   # 0-5
 
@@ -2397,8 +2392,7 @@ erroOpcodeInexistente:
 print_str msgErroOpcodeInexistente
 print_str
 
-li $v0 10
-syscall # termina o programa
+j fim
 
 
 Roteador.Fim:
@@ -2596,8 +2590,7 @@ erroRegistrador:
 print_str msgDeErroRegistrador
 lw $a0 ($sp)
 print_str
-li $v0 10
-syscall
+j fim
 #Roteador.Registrador end
 
 Roteador.Imediato:
@@ -2657,8 +2650,7 @@ offset.erro:
 lw $a0 8($sp)
 print_str msgErroOffset
 print_str
-li $v0 10
-syscall
+j fim
 
 
 
@@ -2683,8 +2675,7 @@ erroSemLabelOffset: .asciiz "Erro, label desconhecido: "
 .text
 print_str erroSemLabelOffset
 print_str
-li $v0 10
-syscall
+j fim
 
 Roteador.Target:
 la $t0 ArrayListDeLabels.Nomes
@@ -2701,8 +2692,7 @@ erroSemLabel: .asciiz "Erro, label desconhecido: "
 .text
 print_str erroSemLabel
 print_str
-li $v0 10
-syscall
+j fim
 
 Roteador.Sa:
 .data
@@ -2717,13 +2707,11 @@ jr $ra #Roteador.Sa end
 erroSaMuitoGrande:
 print_str msgErroSaGrande
 print_str
-li $v0 10
-syscall
+j fim
 erroSaNegativo:
 print_str msgErroSaNegativo
 print_str
-li $v0 10
-syscall
+j fim
 
 Roteador.RegOuImediato:
 add $sp $sp -4
