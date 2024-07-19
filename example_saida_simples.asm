@@ -1,3 +1,4 @@
+clo $3 $1
 add $t0 $t0 $t1
 add $t0 $t0 10
 addi $t1 $t2 10
