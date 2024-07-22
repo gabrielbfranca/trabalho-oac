@@ -1,5 +1,5 @@
 .text 
-l: add $zero $zero $zero
+l: add $zero   $zero                    $zero
 bne $zero $zero l
 
 beq $zero $zero i
@@ -16,7 +16,7 @@ add $t0 $zero $zero
 
 .text 
 l1: add $zero $zero $zero
-bne $zero $zero l1
+bne $zero   $zero l1
 
 beq $zero $zero i1
 i1:

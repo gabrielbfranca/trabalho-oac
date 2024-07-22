@@ -146,6 +146,8 @@ jal getWordInString.Func
 move $s5 $v0 # v0 contem a palavra
 beqz $v1 fim # se lido 0 chars, termina
 add  $s1 $s1 $v1 # adiciona o numero de chars lidas
+lw $t0 ($s5)
+beqz $t0 loop
 
 la $a0 ArrayListDiretivas
 move $a1 $s5
@@ -1382,7 +1384,8 @@ AL.C $s1 8
 loop:
 add $s2 $s3 $s0
 lb $s2 ($s2)
-beq $s2 0x2C pular
+beq $s2 0x2C fim
+beq $s2 0x09 fim
 beq $s2 0x20 fim
 beq $s2 0x0a fim
 beq $s2 0x00 fim2
@@ -1413,6 +1416,8 @@ loop:
 add $s2 $s3 $s0
 lb $s2 ($s2)
 beq $s2 0x20 fim
+beq $s2 0x09 fim
+beq $s2 0x2c fim
 beq $s2 0x0a fim
 beq $s2 0x00 fim2
 ArrayList.FastAppendByte $s1 $s2
@@ -2595,6 +2600,9 @@ j fim
 
 Roteador.Imediato:
 asciiToNumber $a0
+bgt $v0 0x7fff erroImediato
+blt $v0 -0x8000 erroImediato
+and $v0 0xffff
 jr $ra #Roteador.Imediato end
 
 Roteador.Offset:
@@ -2733,6 +2741,9 @@ jr $ra
 
 testeImediato:
 asciiToNumber $a0
+bgt $v0 0x7fff erroImediato
+blt $v0 -0x8000 erroImediato
+and $v0 0xffff
 and $t0 $s0 0xf800
 sll $t0 $t0 5
 andi $s0 0xffff07ff
@@ -2740,6 +2751,16 @@ add $v0 $v0 $t0
 add $v0 $v0 0x20000000
 jr $ra
 
+
+erroImediato:
+.data
+msgErroImediato: .asciiz "Erro número fora dos limites de 16 bits: "
+.text
+EOL
+print_str msgErroImediato
+print_str
+EOL
+j fim
 
 
 
